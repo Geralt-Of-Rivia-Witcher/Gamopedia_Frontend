@@ -1,0 +1,102 @@
+.search-bar
+{
+    width: 1000px;
+    margin: auto;
+}
+
+form
+{
+    margin-bottom: 20px;
+}
+
+.hideButton
+{
+    display: none !important;
+}
+
+.game-image
+{
+    width: 500px;
+    float: left;
+    margin-right: 15px;
+}
+
+.game-name
+{
+    font-size: calc(100px + (60 - 100) * ((100vw - 300px) / (1600 - 300)));
+    color: #ff2c02;
+    margin-bottom: 20px;
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.game-description
+{
+    color: white;
+    Font-Family: 'Lora', Serif;
+    Font-Size: calc(40px + (20 - 40) * ((100vw - 300px) / (1600 - 300)));
+    letter-spacing: calc(1px + (0.5 - 1) * ((100vw - 300px) / (1600 - 300)));
+    line-height: calc(53px + (26 - 53) * ((100vw - 300px) / (1600 - 300)));
+}
+
+h2:not(.heading), h3:not(.heading)
+{
+    Font-Size: calc(55px + (35 - 55) * ((100vw - 300px) / (1600 - 300)));
+    margin-top: calc(35px + (20 - 35) * ((100vw - 300px) / (1600 - 300)));
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}
+
+.grid-container
+{
+    margin-top: 50px;
+}
+
+.heading
+{
+    font-size: calc(65px + (40 - 65) * ((100vw - 300px) / (1600 - 300)));
+    color: #ff2c02;
+    margin-bottom: 5px;
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.info
+{
+    font-size: calc(40px + (20 - 40) * ((100vw - 300px) / (1600 - 300)));
+    color: white;
+    margin-bottom: 20px;
+    Font-Family: 'Lora', Serif;
+}
+
+.screenshot-heading
+{
+    margin-bottom: 20px;
+}
+
+.screenshots-div
+{
+    width: 1024px !important;
+    height: 576px !important;
+    margin: 0px auto 200px;
+}
+
+.screenshot
+{
+    width: 1024px !important;
+    height: 576px !important;
+}
+
+@media screen and (max-width: 600px)
+{
+    .grid, .screenshot-heading, .game-name, .game-description
+    {
+        text-align: center !important;
+    }
+    .game-image
+    {
+        display: none;
+    }
+}

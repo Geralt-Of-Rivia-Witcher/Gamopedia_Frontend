@@ -1,0 +1,25 @@
+.footer-div
+{
+    padding: 8px 0px;
+    margin: auto;
+    width: 95%;
+    text-align: right;
+    background-color: #181716;
+    border-top-left-radius: 25px;
+    border-top-right-radius: 25px;
+}
+
+.footer-text
+{
+    text-decoration: none;
+    margin: 5px 40px;
+    font-size: calc(32px + (17 - 32) * ((100vw - 300px) / (1600 - 300)));
+    color: white;
+    Font-Family: 'Lora', Serif;
+    letter-spacing: calc(4px + (0.8 - 4) * ((100vw - 300px) / (1600 - 300)));;
+}
+
+.footer-links
+{
+    color: white;
+}
