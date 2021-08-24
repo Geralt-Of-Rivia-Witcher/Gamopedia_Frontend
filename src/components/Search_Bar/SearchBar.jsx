@@ -38,7 +38,7 @@ const useStyles = makeStyles((theme) =>
     button:
     {
         width: "1020px",
-        height: "calc(55px + (40 - 55) * ((100vw - 300px) / (1600 - 300)))"
+        height: "calc(65px + (40 - 65) * ((100vw - 300px) / (1600 - 300)))"
     },
     label:
     {
