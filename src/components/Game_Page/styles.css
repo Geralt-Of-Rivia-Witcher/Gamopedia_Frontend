@@ -69,6 +69,7 @@ h2:not(.heading), h3:not(.heading)
     color: white;
     margin-bottom: 20px;
     Font-Family: 'Lora', Serif;
+    letter-spacing: calc(2px + (0 - 2) * ((100vw - 300px) / (1600 - 300)));
 }
 
 .screenshot-heading
