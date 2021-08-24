@@ -15,7 +15,11 @@ function toString(array)
     } 
     catch (error)
     {
-        if(array.length > 10)
+        if(array === null)
+        {
+            return "Not Available";
+        }
+        else if(array.length > 10)
         {
             return array.substring(0, 10);
         }
