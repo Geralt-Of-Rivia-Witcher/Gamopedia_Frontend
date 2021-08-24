@@ -121,6 +121,7 @@ function SearchBar(props)
                 }}
             />
             <Button
+                type="submit"
                 variant="contained"
                 color="primary"
                 className={classes.button + " " + props.class}
