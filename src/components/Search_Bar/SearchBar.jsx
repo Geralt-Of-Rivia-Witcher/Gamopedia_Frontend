@@ -4,8 +4,10 @@ import { TextField, Button } from "@material-ui/core";
 import { makeStyles } from '@material-ui/core/styles';
 import  { useHistory } from "react-router-dom";
 import SearchIcon from '@material-ui/icons/Search';
+import env from "react-dotenv";
 
 let gameData;
+let BACKEND_URL = env.BACKEND_URL || "http://localhost:5000/";
 
 const useStyles = makeStyles((theme) =>
 ({
@@ -69,9 +71,7 @@ function SearchBar(props)
     {
         event.preventDefault();
         setGameName("");
-        
-        // axios.post("http://localhost:5000/api/gameName", { gameName: gameName })
-        axios.post("https://gamopedia-backend.herokuapp.com/api/gameName", { gameName: gameName })
+        axios.post(BACKEND_URL + "api/gameName", { gameName: gameName })
         .then((res) =>
         {
             gameData = res.data;

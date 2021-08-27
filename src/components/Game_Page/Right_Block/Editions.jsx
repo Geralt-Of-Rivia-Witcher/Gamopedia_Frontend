@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import axios from "axios";
+import env from "react-dotenv";
 
 var previousGameName = "";
+let BACKEND_URL = env.BACKEND_URL || "http://localhost:5000/";
 
 function getEditions(gameName)
 {
     return new Promise((resolve, reject) =>
     {
-        // axios.post("http://localhost:5000/api/editions", { gameName: gameName })
-        axios.post("https://gamopedia-backend.herokuapp.com/api/editions", { gameName: gameName })
+        axios.post(BACKEND_URL + "api/editions", { gameName: gameName })
         .then((res) =>
         {
             if(res.data.count === 0)

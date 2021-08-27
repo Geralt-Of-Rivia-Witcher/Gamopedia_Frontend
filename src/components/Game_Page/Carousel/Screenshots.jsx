@@ -2,15 +2,16 @@ import React, { useState } from "react";
 import axios from "axios";
 import Carousel from 'react-material-ui-carousel'
 import { Paper } from '@material-ui/core'
+import env from "react-dotenv";
 
 var previousGameName = "";
+let BACKEND_URL = env.BACKEND_URL || "http://localhost:5000/";
 
 function getScreenshots(gameName)
 {
     return new Promise((resolve, reject) =>
     {
-        // axios.post("http://localhost:5000/api/screenshots", { gameName: gameName })
-        axios.post("https://gamopedia-backend.herokuapp.com/api/screenshots", { gameName: gameName })
+        axios.post(BACKEND_URL + "api/screenshots", { gameName: gameName })
         .then((res) =>
         {
             if(res.data.count === 0)
