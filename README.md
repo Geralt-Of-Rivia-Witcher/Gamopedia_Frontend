@@ -42,7 +42,7 @@
 <p  align="center">
   <img align="center" src="https://github.com/Geralt-Of-Rivia-Witcher/Gamopedia_Frontend/blob/master/images/screenshot.PNG">
   <br />
-  <img align="center" src="https://github.com/Geralt-Of-Rivia-Witcher/Gamopedia_Frontend/blob/master/images/screenshot.PNG">
+  <img align="center" src="https://github.com/Geralt-Of-Rivia-Witcher/Gamopedia_Frontend/blob/master/images/screenshot2.PNG">
 </p>
 <br />
 <br />
