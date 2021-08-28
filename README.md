@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">Gamopedia Backend</h1>
+  <h1 align="center">Gamopedia Frontend</h1>
 
   <p align="center">
     <h3 align="center">The Frontend code of Gamopedia web app</h3>
