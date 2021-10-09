@@ -50,8 +50,7 @@ h2:not(.heading), h3:not(.heading)
 
 .grid-container
 {
-    margin: 50px 0 100px;
-    text-align: center;
+    margin-top: 50px;
 }
 
 .heading
@@ -76,7 +75,6 @@ h2:not(.heading), h3:not(.heading)
 .screenshot-heading
 {
     margin-bottom: 20px;
-    text-align: center;
 }
 
 .screenshots-div
