@@ -20,7 +20,7 @@ function Game()
 {
     if(typeof gameData === "undefined")
     {
-        return (< Redirect to="/" />);
+        return (< Redirect to = "/" />);
     }
 
     return(
@@ -44,7 +44,7 @@ function Game()
                     <Platforms heading="Platforms" info={ gameData.platforms } />
                 </Grid>
 
-                <Grid className="grid" item sm={4} xs={12} style={{textAlign:"center"}}>
+                <Grid className="grid" item sm={4} xs={12}>
                     <h3 className="heading">Metacritic Rating</h3>
                     { gameData.metacritic !== null ? <ProgressBar score={ gameData.metacritic }platform="Overall" /> : <p className="info">Not Available</p> }
                     { PlatformRatings(gameData.metacritic_platforms) }
