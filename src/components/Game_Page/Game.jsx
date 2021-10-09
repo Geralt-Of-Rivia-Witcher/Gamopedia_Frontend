@@ -32,9 +32,9 @@ function Game()
             <h1 className="game-name">{ gameData.name }</h1>
             <Markup className="game-description" content={gameData.description} />
 
-            <Grid container spacing={0} className="grid-container" >
+            <Grid container spacing={0} className="grid-container">
 
-                <Grid className="grid left-grid" item sm={4} xs={12} >
+                <Grid className="grid" item sm={4} xs={12}>
                     <LeftBlock heading="Developer" info={ gameData.developers } />
                     <LeftBlock heading="Publisher" info={ gameData.publishers } />
                     { gameData.tba ? <><h3 className="heading">Release Data</h3><p className="info">To Be Announced</p></> : <LeftBlock heading="Release Date" info={ gameData.released } /> }
@@ -44,13 +44,13 @@ function Game()
                     <Platforms heading="Platforms" info={ gameData.platforms } />
                 </Grid>
 
-                <Grid className="grid" item sm={4} xs={12} >
+                <Grid className="grid" item sm={4} xs={12} style={{textAlign:"center"}}>
                     <h3 className="heading">Metacritic Rating</h3>
                     { gameData.metacritic !== null ? <ProgressBar score={ gameData.metacritic }platform="Overall" /> : <p className="info">Not Available</p> }
                     { PlatformRatings(gameData.metacritic_platforms) }
                 </Grid>
 
-                <Grid className="grid right-grid" item sm={4} xs={12} >
+                <Grid className="grid" item sm={4} xs={12}>
                     <h3 className="heading">Useful Links</h3>
                     { gameData.website === "" && gameData.reddit_url === "" ? <p className="info">Not Available</p> :
                     <>
