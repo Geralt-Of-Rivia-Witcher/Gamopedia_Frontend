@@ -57,7 +57,6 @@ The information is fetched from <a href="https://rawg.io/apidocs">RAWG Video Gam
 ### Built With
 [<img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB">](https://reactjs.org/)
 <br />
-Other than React, several node modules are also used.
 
 
 <!-- GETTING STARTED -->
