@@ -4,7 +4,7 @@
   <p align="center">
     <h3 align="center">The Frontend code of Gamopedia web app</h3>
     <p align="center" >
-      <a href="https://gamopedia.herokuapp.com/">Live Demo</a>
+      <a href="https://gamopedia.siddhantkumarsingh.me/">Live Demo</a>
     </p>
     <br />
   </p>
