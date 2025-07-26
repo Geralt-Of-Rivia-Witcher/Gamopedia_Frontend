@@ -1,24 +1,21 @@
-import React from "react"
+import React from "react";
 
 import Game from "./Game_Page/Game.jsx";
 import Home from "./Home_Page/Home.jsx";
 import NotFound from "./404_Page/404.jsx";
 
-import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
-  
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-function App()
-{
-
-    return(
-        <Router>
-            <Switch>
-                <Route exact path = "/" component = { Home } />
-                <Route exact path = "/Game" component = { Game } />
-                <Route exact path = "*" component = { NotFound } />
-            </Switch>
-        </Router>
-    );
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/Game" element={<Game />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Router>
+  );
 }
 
 export default App;
