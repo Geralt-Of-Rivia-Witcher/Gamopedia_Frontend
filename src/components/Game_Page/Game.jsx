@@ -12,7 +12,7 @@ import {
   Collapse,
   Button,
 } from "@chakra-ui/react";
-import { Navigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   FaUserTie,
   FaBuilding,
@@ -26,7 +26,7 @@ import {
 import { MdCategory } from "react-icons/md";
 import { GiConsoleController } from "react-icons/gi";
 
-import { gameData } from "../Search_Bar/SearchBar.jsx";
+import axios from "axios";
 
 import ProgressBar from "./Middle_Block/ProgressBar.jsx";
 import Platforms from "./Left_Block/Platforms.jsx";
@@ -39,20 +39,85 @@ import { formatDate } from "../../utils/formatDate";
 import PlatformRatings from "./Middle_Block/PlatformRatings.jsx";
 import { GlassCards } from "./RatingShowcase.jsx";
 
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour in ms
+const BACKEND_URL =
+  process.env.REACT_APP_BACKEND_URL || "http://localhost:5000/";
+
 const Game = () => {
   const [showFullDesc, setShowFullDesc] = useState(false);
   const isMobile = useBreakpointValue({ base: true, md: false });
-  const location = useLocation();
-  const [_, forceUpdate] = useState(0);
+  const { slug } = useParams();
+  const navigate = useNavigate();
+  const [gameData, setGameData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // When location changes (i.e., after a search), force a re-render to pick up new gameData
-  useEffect(() => {
-    forceUpdate((v) => v + 1);
-  }, [location]);
-
-  if (typeof gameData === "undefined") {
-    return <Navigate to="/" />;
+  // Helper: get/set cache with TTL
+  function getCachedGame(slug) {
+    try {
+      const cached = localStorage.getItem(`game_${slug}`);
+      if (!cached) return null;
+      const { data, ts } = JSON.parse(cached);
+      if (Date.now() - ts > CACHE_TTL) {
+        localStorage.removeItem(`game_${slug}`);
+        return null;
+      }
+      return data;
+    } catch {
+      return null;
+    }
   }
+  function setCachedGame(slug, data) {
+    localStorage.setItem(
+      `game_${slug}`,
+      JSON.stringify({ data, ts: Date.now() })
+    );
+  }
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    // Try cache first
+    const cached = getCachedGame(slug);
+    if (cached) {
+      setGameData(cached);
+      setLoading(false);
+      return;
+    }
+    // Fetch from backend
+    axios
+      .post(BACKEND_URL + "api/gameName", { gameName: slug })
+      .then((res) => {
+        if (res.data.detail === "Not found.") {
+          setError("Game not found.");
+          setLoading(false);
+          setGameData(null);
+          navigate("/");
+        } else {
+          setGameData(res.data);
+          setCachedGame(slug, res.data);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        setError("Error loading game data.");
+        setLoading(false);
+        setGameData(null);
+      });
+  }, [slug, navigate]);
+
+  if (loading)
+    return (
+      <Box color="orange.300" p={8} textAlign="center">
+        Loading...
+      </Box>
+    );
+  if (error || !gameData)
+    return (
+      <Box color="red.300" p={8} textAlign="center">
+        {error || "Game not found."}
+      </Box>
+    );
 
   // Short description logic
   const desc = gameData.description?.replace(/<[^>]+>/g, "");

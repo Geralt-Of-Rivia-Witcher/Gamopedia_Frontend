@@ -12,7 +12,7 @@ import { SearchIcon } from "@chakra-ui/icons";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
-let gameData;
+// No global gameData, handled in Game.jsx
 let BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000/";
 
 const MotionBox = motion(Box);
@@ -33,13 +33,14 @@ function SearchBar(props) {
     axios
       .post(BACKEND_URL + "api/gameName", { gameName: gameName })
       .then((res) => {
-        gameData = res.data;
-        if (gameData.detail === "Not found.") {
+        const data = res.data;
+        if (data.detail === "Not found.") {
           navigate("/");
           setErrorMessage("Game not found. Check for any spelling mistakes.");
           setError(true);
         } else {
-          navigate("/Game");
+          // Use slug for navigation
+          navigate(`/game/${data.slug}`);
           setErrorMessage("");
           setError(false);
         }
@@ -114,4 +115,4 @@ function SearchBar(props) {
   );
 }
 
-export { gameData, SearchBar };
+export { SearchBar };
