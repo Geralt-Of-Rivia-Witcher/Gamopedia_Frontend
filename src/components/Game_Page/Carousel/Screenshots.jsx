@@ -60,9 +60,27 @@ function Screenshots({ gameName }) {
   if (!screenshots.length)
     return <Text color="gray.300">No screenshots available.</Text>;
 
+  const isScrollable = screenshots.length > 3;
   return (
     <>
-      <Flex overflowX="auto" gap={4} py={2} px={2}>
+      <Flex
+        overflowX={isScrollable ? "auto" : "visible"}
+        gap={4}
+        py={2}
+        px={2}
+        justify="center"
+        align="center"
+        w="100%"
+        minH="200px"
+        sx={
+          isScrollable
+            ? {
+                scrollbarWidth: "none",
+                "::-webkit-scrollbar": { display: "none" },
+              }
+            : {}
+        }
+      >
         {screenshots.map((shot, idx) => (
           <Box
             minW="320px"

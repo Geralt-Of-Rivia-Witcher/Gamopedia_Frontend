@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Flex,
@@ -12,7 +12,7 @@ import {
   Collapse,
   Button,
 } from "@chakra-ui/react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import {
   FaUserTie,
   FaBuilding,
@@ -42,6 +42,13 @@ import { GlassCards } from "./RatingShowcase.jsx";
 const Game = () => {
   const [showFullDesc, setShowFullDesc] = useState(false);
   const isMobile = useBreakpointValue({ base: true, md: false });
+  const location = useLocation();
+  const [_, forceUpdate] = useState(0);
+
+  // When location changes (i.e., after a search), force a re-render to pick up new gameData
+  useEffect(() => {
+    forceUpdate((v) => v + 1);
+  }, [location]);
 
   if (typeof gameData === "undefined") {
     return <Navigate to="/" />;
@@ -338,26 +345,37 @@ const Game = () => {
               ))}
         </Grid>
       </Box>
-      <Box w="full" borderBottom="2px solid" borderColor="gray.700" mb={8} />
-      {/* Ratings */}
-
       {ratings.length > 0 && (
-        <Box maxW="6xl" mx="auto" w="full" mb={8}>
-          <Text
-            as="h3"
-            className="heading ratings-heading"
-            fontSize="2xl"
-            color="orange.300"
-            fontWeight="bold"
-            mb={4}
-            textAlign="center"
-          >
-            Ratings
-          </Text>
-          <GlassCards ratings={ratings} />
-        </Box>
+        <>
+          <Box
+            w="full"
+            borderBottom="2px solid"
+            borderColor="gray.700"
+            mb={8}
+          />
+          {/* Ratings */}
+          <Box maxW="6xl" mx="auto" w="full" mb={8}>
+            <Text
+              as="h3"
+              className="heading ratings-heading"
+              fontSize="2xl"
+              color="orange.300"
+              fontWeight="bold"
+              mb={4}
+              textAlign="center"
+            >
+              Ratings
+            </Text>
+            <GlassCards ratings={ratings} />
+          </Box>
+          <Box
+            w="full"
+            borderBottom="2px solid"
+            borderColor="gray.700"
+            mb={8}
+          />
+        </>
       )}
-      <Box w="full" borderBottom="2px solid" borderColor="gray.700" mb={8} />
       {/* Links, Stores, Editions - Revamped */}
       <Box
         bg="rgba(24,23,22,0.7)"
@@ -498,7 +516,7 @@ const Game = () => {
         >
           Screenshots
         </Text>
-        <Box className="screenshots-div">
+        <Box display="flex" justifyContent="center" width="100%">
           <Screenshots gameName={gameData.slug} />
         </Box>
       </Box>
