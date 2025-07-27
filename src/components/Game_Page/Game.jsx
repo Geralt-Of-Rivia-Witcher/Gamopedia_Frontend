@@ -1,11 +1,33 @@
-import React from "react";
-import { Box, Flex } from "@chakra-ui/react";
+import React, { useState } from "react";
+import {
+  Box,
+  Flex,
+  Grid,
+  GridItem,
+  Text,
+  Badge,
+  Icon,
+  Tooltip,
+  useBreakpointValue,
+  Collapse,
+  Button,
+} from "@chakra-ui/react";
 import { Navigate } from "react-router-dom";
+import {
+  FaUserTie,
+  FaBuilding,
+  FaCalendarAlt,
+  FaClock,
+  FaTags,
+  FaGamepad,
+  FaStore,
+  FaLink,
+} from "react-icons/fa";
+import { MdCategory } from "react-icons/md";
+import { GiConsoleController } from "react-icons/gi";
 
-import LeftBlock from "./Left_Block/Block.jsx";
 import { gameData } from "../Search_Bar/SearchBar.jsx";
 import ProgressBar from "./Middle_Block/ProgressBar.jsx";
-import PlatformRatings from "./Middle_Block/PlatformRatings.jsx";
 import Platforms from "./Left_Block/Platforms.jsx";
 import Stores from "./Right_Block/Stores.jsx";
 import Editions from "./Right_Block/Editions.jsx";
@@ -13,10 +35,80 @@ import { SearchBar } from "../Search_Bar/SearchBar.jsx";
 import Screenshots from "./Carousel/Screenshots.jsx";
 import Footer from "../Footer/Footer.jsx";
 
-function Game() {
+const Game = () => {
+  const [showFullDesc, setShowFullDesc] = useState(false);
+  const isMobile = useBreakpointValue({ base: true, md: false });
+
   if (typeof gameData === "undefined") {
     return <Navigate to="/" />;
   }
+
+  // Short description logic
+  const desc = gameData.description?.replace(/<[^>]+>/g, "");
+  const shortDesc =
+    desc && desc.length > 220 ? desc.slice(0, 220) + "..." : desc;
+
+  // Info grid data
+  const infoFields = [
+    {
+      label: "Developer",
+      value: gameData.developers,
+      icon: FaUserTie,
+    },
+    {
+      label: "Publisher",
+      value: gameData.publishers,
+      icon: FaBuilding,
+    },
+    {
+      label: "Release Date",
+      value: gameData.tba ? "To Be Announced" : gameData.released,
+      icon: FaCalendarAlt,
+    },
+    {
+      label: "Last Updated",
+      value: gameData.updated,
+      icon: FaClock,
+    },
+    {
+      label: "Genre",
+      value: gameData.genres,
+      icon: MdCategory,
+    },
+    {
+      label: "ESRB Rating",
+      value: gameData.esrb_rating?.name || "Not Available",
+      icon: FaGamepad,
+    },
+    {
+      label: "Platforms",
+      value:
+        gameData.platforms?.map((p) => p.platform.name).join(", ") ||
+        "Not Available",
+      icon: GiConsoleController,
+    },
+  ];
+
+  // Ratings row data
+  const ratings = [
+    ...(gameData.metacritic !== null
+      ? [
+          {
+            label: "Metacritic",
+            value: gameData.metacritic,
+            color: "orange.400",
+            icon: FaTags,
+          },
+        ]
+      : []),
+    ...(gameData.metacritic_platforms || []).map((rating) => ({
+      label: rating.platform.name,
+      value: rating.metascore,
+      color: "blue.400",
+      icon: GiConsoleController,
+      url: rating.url,
+    })),
+  ];
 
   return (
     <Flex
@@ -27,120 +119,232 @@ function Game() {
       <Box className="search-bar">
         <SearchBar class="hideButton" />
       </Box>
-      <Flex
-        direction={{ base: "column", md: "row" }}
-        align="flex-start"
-        justify="center"
-        px={4}
-        py={8}
-        flex="1 0 auto"
+      {/* Hero Section */}
+      <Box
+        position="relative"
+        w="full"
+        h={{ base: "320px", md: "420px" }}
+        mb={8}
+        overflow="hidden"
       >
-        <Box flex={1} mr={{ md: 4 }}>
-          <img
-            src={gameData.background_image}
-            alt="Game_Img"
-            style={{ width: "100%", borderRadius: 16, marginBottom: 24 }}
-          />
-        </Box>
-        <Box flex={2} ml={{ md: 4 }}>
-          <Box mb={6}>
-            <Box
+        <Box
+          position="absolute"
+          inset={0}
+          bgImage={`url(${gameData.background_image})`}
+          bgSize="cover"
+          bgPosition="center"
+          filter="blur(16px) brightness(0.5)"
+          zIndex={0}
+        />
+        <Flex
+          position="relative"
+          zIndex={1}
+          h="full"
+          align="center"
+          justify="center"
+        >
+          <Box
+            bg="rgba(24,23,22,0.85)"
+            borderRadius="2xl"
+            boxShadow="0 8px 32px 0 rgba(31, 38, 135, 0.37)"
+            px={{ base: 4, md: 10 }}
+            py={{ base: 6, md: 8 }}
+            maxW="3xl"
+            mx="auto"
+            textAlign="center"
+          >
+            <Text
               as="h1"
-              fontSize={{ base: "3xl", md: "5xl" }}
+              fontSize={{ base: "2xl", md: "5xl" }}
               fontWeight="extrabold"
               color="orange.400"
               fontFamily="Orbitron, sans-serif"
               textShadow="0 0 16px #ff2c02, 0 0 32px #ff2c02"
-              mb={4}
+              mb={2}
             >
               {gameData.name}
-            </Box>
-            <Box
-              bg="rgba(24,23,22,0.7)"
-              borderRadius="2xl"
-              p={6}
-              boxShadow="0 8px 32px 0 rgba(31, 38, 135, 0.37)"
-              color="gray.100"
+            </Text>
+            <Text
+              color="gray.200"
               fontSize={{ base: "md", md: "xl" }}
               fontFamily="Rajdhani, sans-serif"
-              mb={4}
-              maxW="3xl"
+              mb={2}
+              noOfLines={showFullDesc ? undefined : 3}
             >
-              <div
-                className="game-description"
-                dangerouslySetInnerHTML={{ __html: gameData.description }}
-              />
-            </Box>
+              {showFullDesc ? desc : shortDesc}
+            </Text>
+            {desc && desc.length > 220 && (
+              <Button
+                size="sm"
+                colorScheme="orange"
+                variant="link"
+                onClick={() => setShowFullDesc((v) => !v)}
+                mb={2}
+              >
+                {showFullDesc ? "Show less" : "Read more"}
+              </Button>
+            )}
           </Box>
-          <Flex mt={8} gap={8} wrap="wrap">
-            <Box minW="250px">
-              <LeftBlock heading="Developer" info={gameData.developers} />
-              <LeftBlock heading="Publisher" info={gameData.publishers} />
-              {gameData.tba ? (
-                <>
-                  <h3 className="heading">Release Data</h3>
-                  <p className="info">To Be Announced</p>
-                </>
-              ) : (
-                <LeftBlock heading="Release Date" info={gameData.released} />
-              )}
-              <LeftBlock heading="Last Updated" info={gameData.updated} />
-              <LeftBlock heading="Genre" info={gameData.genres} />
-              <h3 className="heading">ESRB Rating</h3>
-              <p className="info">
-                {gameData.esrb_rating === null
-                  ? "Not Available"
-                  : gameData.esrb_rating.name}
-              </p>
-              <Platforms heading="Platforms" info={gameData.platforms} />
-            </Box>
-            <Box minW="250px">
-              <h3 className="heading">Metacritic Rating</h3>
-              {gameData.metacritic !== null ? (
-                <ProgressBar score={gameData.metacritic} platform="Overall" />
-              ) : (
-                <p className="info">Not Available</p>
-              )}
-              {PlatformRatings(gameData.metacritic_platforms)}
-            </Box>
-            <Box minW="250px">
-              <h3 className="heading">Useful Links</h3>
-              {gameData.website === "" && gameData.reddit_url === "" ? (
-                <p className="info">Not Available</p>
-              ) : (
-                <>
-                  <a
-                    href={gameData.website}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="info"
-                  >
-                    Official Website
-                  </a>
-                  <br />
-                  <br />
-                  <a
-                    href={gameData.reddit_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="info"
-                  >
-                    Reddit
-                  </a>
-                  <br />
-                  <br />
-                </>
-              )}
-              <h3 className="heading">Stores</h3>
-              {Stores(gameData.stores)}
-              <h3 className="heading">DLCs & Editions</h3>
-              <Editions gameName={gameData.slug} />
-            </Box>
-          </Flex>
-        </Box>
-      </Flex>
+        </Flex>
+      </Box>
+      {/* Ratings Row */}
+      {ratings.length > 0 && (
+        <Flex
+          direction="row"
+          gap={4}
+          px={{ base: 2, md: 8 }}
+          mb={8}
+          overflowX="auto"
+          align="center"
+        >
+          {ratings.map((r, idx) => (
+            <Tooltip label={r.label} key={idx} hasArrow>
+              <Badge
+                px={4}
+                py={3}
+                fontSize="xl"
+                colorScheme="orange"
+                bg={r.color}
+                color="white"
+                borderRadius="full"
+                boxShadow="0 0 16px #ff2c02"
+                display="flex"
+                alignItems="center"
+                gap={2}
+                as={r.url ? "a" : "span"}
+                href={r.url}
+                target={r.url ? "_blank" : undefined}
+                rel={r.url ? "noreferrer" : undefined}
+                _hover={{ filter: "brightness(1.2)", textDecoration: "none" }}
+              >
+                <Icon as={r.icon} boxSize={5} /> {r.value}
+              </Badge>
+            </Tooltip>
+          ))}
+        </Flex>
+      )}
+      {/* Info Grid */}
+      <Grid
+        templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
+        gap={6}
+        px={{ base: 2, md: 8 }}
+        mb={8}
+        w="full"
+        maxW="6xl"
+        mx="auto"
+      >
+        {infoFields.map((field, idx) => (
+          <GridItem
+            key={field.label}
+            bg="rgba(24,23,22,0.7)"
+            borderRadius="xl"
+            boxShadow="0 0 16px #1A74E2"
+            p={5}
+            display="flex"
+            flexDirection="column"
+            alignItems="flex-start"
+            minH="90px"
+          >
+            <Flex align="center" gap={2} mb={1}>
+              <Icon as={field.icon} color="orange.300" boxSize={5} />
+              <Text
+                fontSize="sm"
+                color="gray.400"
+                fontWeight="bold"
+                textTransform="uppercase"
+              >
+                {field.label}
+              </Text>
+            </Flex>
+            <Text
+              fontSize="lg"
+              color="white"
+              fontWeight="bold"
+              wordBreak="break-word"
+            >
+              {Array.isArray(field.value)
+                ? field.value.map((v) => v.name || v).join(", ")
+                : field.value}
+            </Text>
+          </GridItem>
+        ))}
+      </Grid>
+      {/* Links, Stores, Editions */}
+      <Box
+        bg="rgba(24,23,22,0.7)"
+        borderRadius="2xl"
+        boxShadow="0 8px 32px 0 rgba(31, 38, 135, 0.37)"
+        px={{ base: 4, md: 10 }}
+        py={{ base: 6, md: 8 }}
+        maxW="6xl"
+        mx="auto"
+        mb={8}
+      >
+        <Flex direction={{ base: "column", md: "row" }} gap={8}>
+          <Box flex={1}>
+            <Text fontSize="xl" color="orange.300" fontWeight="bold" mb={2}>
+              Useful Links
+            </Text>
+            {gameData.website === "" && gameData.reddit_url === "" ? (
+              <Text color="gray.400">Not Available</Text>
+            ) : (
+              <Flex direction="column" gap={2}>
+                {gameData.website && (
+                  <Flex align="center" gap={2}>
+                    <Icon as={FaLink} color="orange.200" />
+                    <a
+                      href={gameData.website}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: "#fff" }}
+                    >
+                      Official Website
+                    </a>
+                  </Flex>
+                )}
+                {gameData.reddit_url && (
+                  <Flex align="center" gap={2}>
+                    <Icon as={FaLink} color="orange.200" />
+                    <a
+                      href={gameData.reddit_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: "#fff" }}
+                    >
+                      Reddit
+                    </a>
+                  </Flex>
+                )}
+              </Flex>
+            )}
+          </Box>
+          <Box flex={1}>
+            <Text fontSize="xl" color="orange.300" fontWeight="bold" mb={2}>
+              Stores
+            </Text>
+            {Stores(gameData.stores)}
+          </Box>
+          <Box flex={1}>
+            <Text fontSize="xl" color="orange.300" fontWeight="bold" mb={2}>
+              DLCs & Editions
+            </Text>
+            <Editions gameName={gameData.slug} />
+          </Box>
+        </Flex>
+      </Box>
+      {/* Screenshots */}
       <Box>
-        <h3 className="heading screenshot-heading">Screenshots</h3>
+        <Text
+          as="h3"
+          className="heading screenshot-heading"
+          fontSize="2xl"
+          color="orange.300"
+          fontWeight="bold"
+          mb={4}
+          textAlign="center"
+        >
+          Screenshots
+        </Text>
         <Box className="screenshots-div">
           <Screenshots gameName={gameData.slug} />
         </Box>
@@ -150,6 +354,6 @@ function Game() {
       </Box>
     </Flex>
   );
-}
+};
 
 export default Game;
