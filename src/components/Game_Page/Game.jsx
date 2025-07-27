@@ -5,11 +5,7 @@ import {
   Grid,
   GridItem,
   Text,
-  Badge,
   Icon,
-  Tooltip,
-  useBreakpointValue,
-  Collapse,
   Button,
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -20,7 +16,6 @@ import {
   FaClock,
   FaTags,
   FaGamepad,
-  FaStore,
   FaLink,
 } from "react-icons/fa";
 import { MdCategory } from "react-icons/md";
@@ -28,15 +23,11 @@ import { GiConsoleController } from "react-icons/gi";
 
 import axios from "axios";
 
-import ProgressBar from "./Middle_Block/ProgressBar.jsx";
-import Platforms from "./Left_Block/Platforms.jsx";
-import Stores from "./Right_Block/Stores.jsx";
 import Editions from "./Right_Block/Editions.jsx";
 import { SearchBar } from "../Search_Bar/SearchBar.jsx";
 import Screenshots from "./Carousel/Screenshots.jsx";
 import Footer from "../Footer/Footer.jsx";
 import { formatDate } from "../../utils/formatDate";
-import PlatformRatings from "./Middle_Block/PlatformRatings.jsx";
 import { GlassCards } from "./RatingShowcase.jsx";
 
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour in ms
@@ -45,7 +36,6 @@ const BACKEND_URL =
 
 const Game = () => {
   const [showFullDesc, setShowFullDesc] = useState(false);
-  const isMobile = useBreakpointValue({ base: true, md: false });
   const { slug } = useParams();
   const navigate = useNavigate();
   const [gameData, setGameData] = useState(null);

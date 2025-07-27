@@ -5,7 +5,6 @@ import { ChakraProvider, extendTheme } from "@chakra-ui/react";
 import "@fontsource/orbitron/700.css";
 import "@fontsource/rajdhani/400.css";
 
-// Basic CSS reset and body styling
 const globalStyles = `
   * {
     margin: 0;
