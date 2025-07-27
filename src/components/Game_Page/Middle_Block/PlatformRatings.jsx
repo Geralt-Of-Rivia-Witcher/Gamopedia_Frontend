@@ -5,7 +5,7 @@ import { VStack, Link } from "@chakra-ui/react";
 function PlatformRatings(array) {
   return (
     <VStack spacing={4} align="stretch">
-      {array.map((rating) => (
+      {array.array.map((rating) => (
         <Link
           key={rating.platform.platform}
           href={rating.url}

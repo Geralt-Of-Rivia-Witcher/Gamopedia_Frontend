@@ -27,6 +27,7 @@ import { MdCategory } from "react-icons/md";
 import { GiConsoleController } from "react-icons/gi";
 
 import { gameData } from "../Search_Bar/SearchBar.jsx";
+
 import ProgressBar from "./Middle_Block/ProgressBar.jsx";
 import Platforms from "./Left_Block/Platforms.jsx";
 import Stores from "./Right_Block/Stores.jsx";
@@ -34,6 +35,8 @@ import Editions from "./Right_Block/Editions.jsx";
 import { SearchBar } from "../Search_Bar/SearchBar.jsx";
 import Screenshots from "./Carousel/Screenshots.jsx";
 import Footer from "../Footer/Footer.jsx";
+import { formatDate } from "../../utils/formatDate";
+import PlatformRatings from "./Middle_Block/PlatformRatings.jsx";
 
 const Game = () => {
   const [showFullDesc, setShowFullDesc] = useState(false);
@@ -62,12 +65,12 @@ const Game = () => {
     },
     {
       label: "Release Date",
-      value: gameData.tba ? "To Be Announced" : gameData.released,
+      value: gameData.tba ? "To Be Announced" : formatDate(gameData.released),
       icon: FaCalendarAlt,
     },
     {
       label: "Last Updated",
-      value: gameData.updated,
+      value: formatDate(gameData.updated),
       icon: FaClock,
     },
     {
@@ -117,15 +120,18 @@ const Game = () => {
       bgGradient="linear(to-br, #18181b, #232526 80%)"
     >
       <Box className="search-bar">
-        <SearchBar class="hideButton" />
+        <SearchBar />
       </Box>
       {/* Hero Section */}
       <Box
         position="relative"
         w="full"
-        h={{ base: "320px", md: "420px" }}
         mb={8}
+        minH={{ base: "320px", md: "420px" }}
         overflow="hidden"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
       >
         <Box
           position="absolute"
@@ -139,19 +145,30 @@ const Game = () => {
         <Flex
           position="relative"
           zIndex={1}
-          h="full"
           align="center"
           justify="center"
+          w="full"
         >
+          {/* Add gap between card and background by using marginTop */}
           <Box
+            as={showFullDesc ? "div" : "section"}
             bg="rgba(24,23,22,0.85)"
             borderRadius="2xl"
-            boxShadow="0 8px 32px 0 rgba(31, 38, 135, 0.37)"
             px={{ base: 4, md: 10 }}
             py={{ base: 6, md: 8 }}
             maxW="3xl"
             mx="auto"
             textAlign="center"
+            mt={{ base: 10, md: 16 }}
+            mb={{ base: 10, md: 16 }}
+            minH={{ base: "180px", md: "220px" }}
+            transition="all 0.5s cubic-bezier(.4,0,.2,1)"
+            transform={showFullDesc ? "scale(1.03)" : "scale(1)"}
+            boxShadow={
+              showFullDesc
+                ? "0 0 12px 2px #ff9100, 0 0 24px 4px #ff2c02"
+                : "0 8px 32px 0 rgba(31, 38, 135, 0.37)"
+            }
           >
             <Text
               as="h1"
@@ -170,6 +187,7 @@ const Game = () => {
               fontFamily="Rajdhani, sans-serif"
               mb={2}
               noOfLines={showFullDesc ? undefined : 3}
+              transition="all 0.5s cubic-bezier(.4,0,.2,1)"
             >
               {showFullDesc ? desc : shortDesc}
             </Text>
@@ -180,6 +198,12 @@ const Game = () => {
                 variant="link"
                 onClick={() => setShowFullDesc((v) => !v)}
                 mb={2}
+                style={{
+                  fontWeight: 700,
+                  fontSize: "1.1em",
+                  letterSpacing: "0.5px",
+                  transition: "color 0.3s",
+                }}
               >
                 {showFullDesc ? "Show less" : "Read more"}
               </Button>
@@ -189,39 +213,22 @@ const Game = () => {
       </Box>
       {/* Ratings Row */}
       {ratings.length > 0 && (
-        <Flex
-          direction="row"
-          gap={4}
-          px={{ base: 2, md: 8 }}
-          mb={8}
-          overflowX="auto"
-          align="center"
+        <Box
+          bg="rgba(24,23,22,0.7)"
+          borderRadius="2xl"
+          boxShadow="0 8px 32px 0 rgba(31, 38, 135, 0.37)"
+          px={{ base: 4, md: 10 }}
+          py={{ base: 4, md: 6 }}
+          maxW="3xl"
+          mx="auto"
+          mb={6}
         >
-          {ratings.map((r, idx) => (
-            <Tooltip label={r.label} key={idx} hasArrow>
-              <Badge
-                px={4}
-                py={3}
-                fontSize="xl"
-                colorScheme="orange"
-                bg={r.color}
-                color="white"
-                borderRadius="full"
-                boxShadow="0 0 16px #ff2c02"
-                display="flex"
-                alignItems="center"
-                gap={2}
-                as={r.url ? "a" : "span"}
-                href={r.url}
-                target={r.url ? "_blank" : undefined}
-                rel={r.url ? "noreferrer" : undefined}
-                _hover={{ filter: "brightness(1.2)", textDecoration: "none" }}
-              >
-                <Icon as={r.icon} boxSize={5} /> {r.value}
-              </Badge>
-            </Tooltip>
-          ))}
-        </Flex>
+          {ratings.length > 0 && (
+            <Box>
+              <PlatformRatings array={gameData.metacritic_platforms} />
+            </Box>
+          )}
+        </Box>
       )}
       {/* Info Grid */}
       <Grid
