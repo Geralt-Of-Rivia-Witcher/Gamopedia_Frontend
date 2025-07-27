@@ -504,7 +504,7 @@ const Game = () => {
         </Flex>
       </Box>
       {/* Screenshots */}
-      <Box>
+      <Box mb={12}>
         <Text
           as="h3"
           className="heading screenshot-heading"

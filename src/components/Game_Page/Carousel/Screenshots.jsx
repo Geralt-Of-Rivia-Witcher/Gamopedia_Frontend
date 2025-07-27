@@ -9,11 +9,9 @@ import {
   Modal,
   ModalOverlay,
   ModalContent,
-  ModalBody,
-  IconButton,
   useDisclosure,
 } from "@chakra-ui/react";
-import { ArrowLeftIcon, ArrowRightIcon, CloseIcon } from "@chakra-ui/icons";
+import { ArrowLeftIcon, ArrowRightIcon } from "@chakra-ui/icons";
 
 let BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000/";
 
@@ -108,35 +106,75 @@ function Screenshots({ gameName }) {
         size="full"
         motionPreset="slideInBottom"
       >
-        <ModalOverlay bg="blackAlpha.900" />
+        {/* Overlay with click-to-close */}
+        <ModalOverlay
+          bg="blackAlpha.900"
+          onClick={closeModal}
+          cursor="pointer"
+        />
         <ModalContent
           bg="transparent"
           boxShadow="none"
           display="flex"
           alignItems="center"
           justifyContent="center"
+          position="relative"
+          pointerEvents="none"
         >
-          <ModalBody
-            p={0}
+          {/* Reduced left navigation zone with animated arrow */}
+          {screenshots.length > 1 && (
+            <Box
+              position="fixed"
+              left={0}
+              top={0}
+              h="100vh"
+              w={{ base: "15vw", md: "10vw" }}
+              zIndex={4}
+              cursor="pointer"
+              display="flex"
+              alignItems="center"
+              justifyContent="flex-end"
+              pr={{ base: 6, md: 8 }}
+              bg="transparent"
+              _hover={{ bg: "blackAlpha.400" }}
+              transition="background 0.2s"
+              onClick={(e) => {
+                e.stopPropagation();
+                prev();
+              }}
+              pointerEvents="auto"
+              role="button"
+              aria-label="Previous screenshot"
+            >
+              <ArrowLeftIcon
+                boxSize={14}
+                color="orange.300"
+                opacity={0.7}
+                sx={{
+                  transition: "transform 0.2s, opacity 0.2s",
+                  ".chakra-box:hover &": {
+                    transform: "scale(1.2)",
+                    opacity: 1,
+                    color: "orange.400",
+                  },
+                }}
+              />
+            </Box>
+          )}
+          {/* Main close area with subtle hover effect */}
+          <Box
             display="flex"
             alignItems="center"
             justifyContent="center"
-            position="relative"
+            w="100vw"
+            h="100vh"
+            pointerEvents="auto"
+            onClick={closeModal}
+            zIndex={2}
+            bg="transparent"
+            _hover={{ bg: "blackAlpha.200" }}
+            transition="background 0.2s"
           >
-            <IconButton
-              icon={<ArrowLeftIcon boxSize={8} />}
-              aria-label="Previous"
-              position="absolute"
-              left={4}
-              top="50%"
-              transform="translateY(-50%)"
-              onClick={prev}
-              zIndex={2}
-              colorScheme="orange"
-              variant="ghost"
-              size="lg"
-              isDisabled={screenshots.length < 2}
-            />
             {selected !== null && (
               <Image
                 src={screenshots[selected].image}
@@ -147,35 +185,51 @@ function Screenshots({ gameName }) {
                 borderRadius="2xl"
                 boxShadow="0 0 32px #ff2c02"
                 objectFit="contain"
+                onClick={(e) => e.stopPropagation()}
+                style={{ transition: "box-shadow 0.2s" }}
               />
             )}
-            <IconButton
-              icon={<ArrowRightIcon boxSize={8} />}
-              aria-label="Next"
-              position="absolute"
-              right={4}
-              top="50%"
-              transform="translateY(-50%)"
-              onClick={next}
-              zIndex={2}
-              colorScheme="orange"
-              variant="ghost"
-              size="lg"
-              isDisabled={screenshots.length < 2}
-            />
-            <IconButton
-              icon={<CloseIcon boxSize={6} />}
-              aria-label="Close"
-              position="absolute"
-              top={4}
-              right={4}
-              onClick={closeModal}
-              colorScheme="orange"
-              variant="solid"
-              size="lg"
-              zIndex={3}
-            />
-          </ModalBody>
+          </Box>
+          {/* Reduced right navigation zone with animated arrow */}
+          {screenshots.length > 1 && (
+            <Box
+              position="fixed"
+              right={0}
+              top={0}
+              h="100vh"
+              w={{ base: "15vw", md: "10vw" }}
+              zIndex={4}
+              cursor="pointer"
+              display="flex"
+              alignItems="center"
+              justifyContent="flex-start"
+              pl={{ base: 6, md: 8 }}
+              bg="transparent"
+              _hover={{ bg: "blackAlpha.400" }}
+              transition="background 0.2s"
+              onClick={(e) => {
+                e.stopPropagation();
+                next();
+              }}
+              pointerEvents="auto"
+              role="button"
+              aria-label="Next screenshot"
+            >
+              <ArrowRightIcon
+                boxSize={14}
+                color="orange.300"
+                opacity={0.7}
+                sx={{
+                  transition: "transform 0.2s, opacity 0.2s",
+                  ".chakra-box:hover &": {
+                    transform: "scale(1.2)",
+                    opacity: 1,
+                    color: "orange.400",
+                  },
+                }}
+              />
+            </Box>
+          )}
         </ModalContent>
       </Modal>
     </>
