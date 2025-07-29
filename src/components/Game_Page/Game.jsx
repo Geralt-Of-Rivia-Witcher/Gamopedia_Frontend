@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import {
   Box,
   Flex,
@@ -96,6 +97,26 @@ const Game = () => {
       });
   }, [slug, navigate]);
 
+  // Hero image fade-out on scroll logic
+  const heroRef = useRef(null);
+  const { scrollY } = useScroll();
+  const heroHeight =
+    typeof window !== "undefined"
+      ? Math.min(window.innerHeight * 0.85, 700)
+      : 480;
+  // Fade out image as you scroll heroHeight px
+  const imageOpacity = useTransform(
+    scrollY,
+    [0, heroHeight * 0.7, heroHeight],
+    [1, 0.3, 0]
+  );
+  const imageScale = useTransform(scrollY, [0, heroHeight], [1, 1.08]);
+  const contentTranslate = useTransform(
+    scrollY,
+    [0, heroHeight * 0.7, heroHeight],
+    [80, 0, 0]
+  );
+
   if (loading)
     return (
       <Box color="orange.300" p={8} textAlign="center">
@@ -177,103 +198,121 @@ const Game = () => {
   ];
 
   return (
-    <Flex
-      direction="column"
-      minH="100vh"
-      bgGradient="linear(to-br, #18181b, #232526 80%)"
-    >
-      <Box className="search-bar">
-        <SearchBar />
-      </Box>
-      {/* Hero Section */}
+    <Flex direction="column" minH="100vh" bg="rgb(35, 37, 38)">
+      {/* Hero Section: search bar always visible at top, image fixed, overlay, etc. */}
       <Box
+        ref={heroRef}
         position="relative"
         w="full"
-        mb={8}
-        minH={{ base: "320px", md: "420px" }}
+        minH="100vh"
+        maxH="100vh"
         overflow="hidden"
         display="flex"
+        flexDirection="column"
         alignItems="center"
-        justifyContent="center"
+        justifyContent="flex-start"
+        mb={0}
+        bg="rgb(35, 37, 38)"
       >
+        {/* Search bar at top, always visible */}
         <Box
-          position="absolute"
-          inset={0}
-          bgImage={`url(${gameData.background_image})`}
-          bgSize="cover"
-          bgPosition="center"
-          filter="blur(16px) brightness(0.5)"
-          zIndex={0}
-        />
-        <Flex
           position="relative"
-          zIndex={1}
-          align="center"
-          justify="center"
-          w="full"
+          zIndex={10}
+          w={{ base: "100%", md: "700px" }}
+          maxW="100vw"
+          mx="auto"
+          pt={{ base: 6, md: 10 }}
+          px={{ base: 2, md: 0 }}
         >
-          {/* Add gap between card and background by using marginTop */}
-          <Box
-            as={showFullDesc ? "div" : "section"}
-            bg="rgba(24,23,22,0.85)"
-            borderRadius="2xl"
-            px={{ base: 4, md: 10 }}
-            py={{ base: 6, md: 8 }}
-            maxW="3xl"
-            mx="auto"
-            textAlign="center"
-            mt={{ base: 10, md: 16 }}
-            mb={{ base: 10, md: 16 }}
-            minH={{ base: "180px", md: "220px" }}
-            transition="all 0.5s cubic-bezier(.4,0,.2,1)"
-            transform={showFullDesc ? "scale(1.03)" : "scale(1)"}
-            boxShadow={
-              showFullDesc
-                ? "0 0 12px 2px #ff9100, 0 0 24px 4px #ff2c02"
-                : "0 8px 32px 0 rgba(31, 38, 135, 0.37)"
-            }
-          >
-            <Text
-              as="h1"
-              fontSize={{ base: "2xl", md: "5xl" }}
-              fontWeight="extrabold"
-              color="orange.400"
-              fontFamily="Orbitron, sans-serif"
-              textShadow="0 0 16px #ff2c02, 0 0 32px #ff2c02"
-              mb={2}
-            >
-              {gameData.name}
-            </Text>
-            <Text
-              color="gray.200"
-              fontSize={{ base: "md", md: "xl" }}
-              fontFamily="Rajdhani, sans-serif"
-              mb={2}
-              noOfLines={showFullDesc ? undefined : 3}
-              transition="all 0.5s cubic-bezier(.4,0,.2,1)"
-            >
-              {showFullDesc ? desc : shortDesc}
-            </Text>
-            {desc && desc.length > 220 && (
-              <Button
-                size="sm"
-                colorScheme="orange"
-                variant="link"
-                onClick={() => setShowFullDesc((v) => !v)}
-                mb={2}
-                style={{
-                  fontWeight: 700,
-                  fontSize: "1.1em",
-                  letterSpacing: "0.5px",
-                  transition: "color 0.3s",
-                }}
-              >
-                {showFullDesc ? "Show less" : "Read more"}
-              </Button>
-            )}
-          </Box>
-        </Flex>
+          <SearchBar />
+        </Box>
+        {/* Fixed hero image, stays in place while fading out */}
+        <motion.img
+          src={gameData.background_image}
+          alt={gameData.name}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            objectFit: "cover",
+            zIndex: 0,
+            opacity: imageOpacity,
+            scale: imageScale,
+            transition: "opacity 0.4s, scale 0.4s",
+            willChange: "opacity, scale",
+            pointerEvents: "none",
+            userSelect: "none",
+          }}
+          draggable={false}
+        />
+        {/* Softer overlay for cinematic effect, more transparent in center */}
+        <Box
+          position="fixed"
+          top={0}
+          left={0}
+          w="100vw"
+          h="100vh"
+          zIndex={1}
+          pointerEvents="none"
+          bgGradient="linear(to-b, #18181b 0%, transparent 30%)"
+        />
       </Box>
+      {/* Title and description, always off-screen at first, slide up as you scroll, with dynamic spacing and Read More */}
+      <motion.div
+        style={{
+          position: "relative",
+          zIndex: 2,
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          marginTop: -40,
+          y: contentTranslate,
+          transition: "y 0.4s cubic-bezier(.4,0,.2,1)",
+        }}
+      >
+        <Text
+          as="h1"
+          fontSize={{ base: "2xl", md: "5xl", lg: "6xl" }}
+          fontWeight="extrabold"
+          color="orange.300"
+          fontFamily="Orbitron, sans-serif"
+          textShadow="0 0 32px #ff2c02, 0 0 64px #ff2c02"
+          mb={4}
+          textAlign="center"
+          letterSpacing="0.06em"
+        >
+          {gameData.name}
+        </Text>
+        <Box maxW="2xl" w="full" textAlign="center" mb={showFullDesc ? 6 : 2}>
+          <Text
+            color="gray.200"
+            fontSize={{ base: "md", md: "xl" }}
+            fontFamily="Rajdhani, sans-serif"
+            transition="all 0.5s cubic-bezier(.4,0,.2,1)"
+            whiteSpace="pre-line"
+            mb={2}
+          >
+            {showFullDesc ? desc : shortDesc}
+          </Text>
+          {desc && desc.length > 220 && (
+            <Button
+              size="sm"
+              colorScheme="orange"
+              variant="outline"
+              onClick={() => setShowFullDesc((v) => !v)}
+              mt={1}
+              mb={2}
+              _hover={{ bg: "orange.600", color: "white" }}
+            >
+              {showFullDesc ? "Show Less" : "Read More"}
+            </Button>
+          )}
+        </Box>
+      </motion.div>
       {/* Info Grid (Game Data) */}
       <Box maxW="6xl" mx="auto" w="full" mb={8}>
         <Grid
