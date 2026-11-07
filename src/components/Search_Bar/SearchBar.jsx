@@ -1,225 +1,228 @@
-import React, { useState, useRef } from "react";
-import axios from "axios";
-import {
-  Input,
-  Button,
-  InputGroup,
-  InputRightElement,
-  useColorModeValue,
-  Box,
-  List,
-  ListItem,
-  Spinner,
-  useOutsideClick,
-} from "@chakra-ui/react";
-import { SearchIcon } from "@chakra-ui/icons";
-import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+"use client";
 
-// No global gameData, handled in Game.jsx
-let BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000/";
+import React, { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
-const MotionBox = motion(Box);
-
-function SearchBar(props) {
-  let navigate = useNavigate();
-  const [gameName, setGameName] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [error, setError] = useState(false);
+export function SearchBar({ compact = false }) {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [loadingSuggest, setLoadingSuggest] = useState(false);
-  const suggestTimeout = useRef();
-  const inputRef = useRef();
-  const boxRef = useRef();
-  useOutsideClick({ ref: boxRef, handler: () => setShowSuggestions(false) });
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [suggestionError, setSuggestionError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const requestId = useRef(0);
 
-  function handleChange(event) {
-    const value = event.target.value;
-    setGameName(value);
-    setError(false);
-    setErrorMessage("");
-    if (suggestTimeout.current) clearTimeout(suggestTimeout.current);
-    if (!value || value.length < 2) {
-      setSuggestions([]);
-      setShowSuggestions(false);
+  useEffect(() => {
+    const trimmed = query.trim();
+    const id = ++requestId.current;
+    if (trimmed.length < 2) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      fetch(`/api/suggest?query=${encodeURIComponent(trimmed)}`)
+        .then(async (response) => {
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || "Suggestion request failed.");
+          return data;
+        })
+        .then((data) => {
+          if (id !== requestId.current) return;
+          setSuggestions(data || []);
+          setOpen(true);
+          setActiveIndex(-1);
+        })
+        .catch((error) => {
+          if (id === requestId.current) {
+            setSuggestions([]);
+            setMessage(error.message || "Couldn’t search the game catalogue. Please try again.");
+            setSuggestionError(true);
+            setOpen(true);
+          }
+        })
+        .finally(() => {
+          if (id === requestId.current) setLoadingSuggestions(false);
+        });
+    }, 280);
+    return () => {
+      window.clearTimeout(timer);
+      if (requestId.current === id) requestId.current += 1;
+    };
+  }, [query, retryCount]);
+
+  useEffect(() => {
+    const onPointerDown = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, []);
+
+  const selectSuggestion = (suggestion) => {
+    setQuery(suggestion.name);
+    setOpen(false);
+    setMessage("");
+    setSuggestionError(false);
+    router.push(`/game/${suggestion.slug}`);
+  };
+
+  const submit = async (event) => {
+    event.preventDefault();
+    if (activeIndex >= 0 && suggestions[activeIndex]) {
+      selectSuggestion(suggestions[activeIndex]);
       return;
     }
-    setLoadingSuggest(true);
-    suggestTimeout.current = setTimeout(() => {
-      axios
-        .get(BACKEND_URL + `api/suggest?query=${encodeURIComponent(value)}`)
-        .then((res) => {
-          setSuggestions(res.data || []);
-          setShowSuggestions(true);
-          setLoadingSuggest(false);
-        })
-        .catch(() => {
-          setSuggestions([]);
-          setShowSuggestions(false);
-          setLoadingSuggest(false);
-        });
-    }, 250);
-  }
-
-  function handleSuggestionClick(s) {
-    setGameName(s.name);
-    setSuggestions([]);
-    setShowSuggestions(false);
-    handleSubmit(null, s.slug);
-  }
-
-  function handleSubmit(event, forcedSlug) {
-    if (event) event.preventDefault();
-    setShowSuggestions(false);
-    setSuggestions([]);
-    setError(false);
-    setErrorMessage("");
-    const searchValue = forcedSlug ? forcedSlug : gameName;
-    if (!searchValue) return;
-    setGameName("");
-    axios
-      .post(BACKEND_URL + "api/gameName", { gameName: searchValue })
-      .then((res) => {
-        const data = res.data;
-        if (data.detail === "Not found.") {
-          navigate("/");
-          setErrorMessage("Game not found. Check for any spelling mistakes.");
-          setError(true);
-        } else {
-          navigate(`/game/${data.slug}`);
-          setErrorMessage("");
-          setError(false);
-        }
-      })
-      .catch((error) => {
-        console.log(error);
+    const value = query.trim();
+    if (!value || submitting) return;
+    setSubmitting(true);
+    setMessage("");
+    setSuggestionError(false);
+    setOpen(false);
+    try {
+      const response = await fetch("/api/gameName", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gameName: value }),
       });
-  }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Game search failed.");
+      if (data?.detail === "Not found." || !data?.slug) {
+        setMessage("No game found. Check the title and try again.");
+      } else {
+        router.push(`/game/${data.slug}`);
+      }
+    } catch (error) {
+      setMessage(error.message || "Couldn’t reach the game catalogue. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-  const inputBg = useColorModeValue("whiteAlpha.200", "whiteAlpha.200");
-  const inputBorder = useColorModeValue("orange.300", "orange.400");
-  const inputShadow = "0 0 16px #ff2c02, 0 0 32px #ff2c02";
+  const onKeyDown = (event) => {
+    if (event.key === "ArrowDown" && suggestions.length) {
+      event.preventDefault();
+      setOpen(true);
+      setActiveIndex((current) => (current + 1) % suggestions.length);
+    } else if (event.key === "ArrowUp" && suggestions.length) {
+      event.preventDefault();
+      setActiveIndex((current) => (current <= 0 ? suggestions.length - 1 : current - 1));
+    } else if (event.key === "Escape") {
+      setOpen(false);
+      setActiveIndex(-1);
+    }
+  };
+
+  const onQueryChange = (event) => {
+    const value = event.target.value;
+    setQuery(value);
+    setMessage("");
+    setSuggestionError(false);
+    setOpen(true);
+    setSuggestions([]);
+    setActiveIndex(-1);
+    setLoadingSuggestions(value.trim().length >= 2);
+  };
+
+  const listId = `game-suggestions-${compact ? "compact" : "main"}`;
 
   return (
-    <MotionBox
-      as="form"
-      w="full"
-      noValidate
-      autoComplete="off"
-      onSubmit={handleSubmit}
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7 }}
-      ref={boxRef}
-      position="relative"
-    >
-      <InputGroup size="lg">
-        <Input
-          name="gameName"
-          value={gameName}
-          onChange={handleChange}
-          isInvalid={error}
-          placeholder="Enter a Game Name."
-          fontSize={{ base: "2xl", md: "3xl" }}
-          fontFamily="Rajdhani, sans-serif"
-          color="white"
-          bg={inputBg}
-          borderColor={inputBorder}
-          borderWidth={2}
-          boxShadow={error ? inputShadow : "0 0 8px #ff2c02"}
-          _placeholder={{ color: "gray.400" }}
-          _focus={{ borderColor: "orange.400", boxShadow: inputShadow }}
-          _hover={{ borderColor: "orange.300" }}
-          pr="4.5rem"
+    <div className={`search-wrap${compact ? " search-wrap-compact" : ""}`} ref={rootRef}>
+      <form className="search-form" role="search" onSubmit={submit}>
+        <label className="sr-only" htmlFor={listId}>
+          Search video games
+        </label>
+        <span className="search-symbol" aria-hidden="true">
+          ⌕
+        </span>
+        <input
+          id={listId}
+          type="search"
+          value={query}
+          placeholder="Try a game title…"
           autoComplete="off"
-          ref={inputRef}
-          onFocus={() => {
-            if (suggestions.length > 0) setShowSuggestions(true);
-          }}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={open && suggestions.length > 0}
+          aria-controls={`${listId}-list`}
+          aria-activedescendant={activeIndex >= 0 ? `${listId}-option-${activeIndex}` : undefined}
+          onChange={onQueryChange}
+          onFocus={() => suggestions.length && setOpen(true)}
+          onKeyDown={onKeyDown}
         />
-        <InputRightElement width="4.5rem">
-          <Button
-            h="2.5rem"
-            size="lg"
-            type="submit"
-            colorScheme="orange"
-            variant="solid"
-            fontSize="2xl"
-            fontWeight="bold"
-            boxShadow="0 0 8px #ff2c02"
-            _hover={{ boxShadow: "0 0 16px #ff2c02" }}
-            className={props.class}
+        <button
+          className="search-submit"
+          type="submit"
+          disabled={!query.trim() || submitting}
+          aria-label="Search games"
+        >
+          {submitting ? (
+            <span className="button-spinner" aria-hidden="true" />
+          ) : (
+            <span aria-hidden="true">↗</span>
+          )}
+        </button>
+      </form>
+      {open &&
+        query.trim().length >= 2 &&
+        (suggestions.length > 0 || loadingSuggestions || !message) && (
+          <div
+            className="suggestion-panel"
+            id={`${listId}-list`}
+            role="listbox"
+            aria-label="Game suggestions"
           >
-            <SearchIcon boxSize={6} />
-          </Button>
-        </InputRightElement>
-      </InputGroup>
-      {showSuggestions && suggestions.length > 0 && (
-        <Box
-          position="absolute"
-          top="100%"
-          left={0}
-          w="100%"
-          bg="gray.900"
-          borderRadius="xl"
-          boxShadow="0 0 16px #1A74E2"
-          zIndex={10}
-          mt={2}
-          maxH="320px"
-          overflowY="auto"
-        >
-          <List spacing={0}>
-            {suggestions.map((s, idx) => (
-              <ListItem
-                key={s.slug}
-                px={4}
-                py={3}
-                cursor="pointer"
-                _hover={{ bg: "orange.700", color: "white" }}
-                borderBottom={
-                  idx !== suggestions.length - 1 ? "1px solid #222" : "none"
-                }
-                onClick={() => handleSuggestionClick(s)}
+            {loadingSuggestions && (
+              <div className="suggestion-status">Searching the catalogue…</div>
+            )}
+            {suggestions.map((item, index) => (
+              <button
+                id={`${listId}-option-${index}`}
+                className={`suggestion-item${activeIndex === index ? " is-active" : ""}`}
+                type="button"
+                role="option"
+                aria-selected={activeIndex === index}
+                key={item.slug}
+                onMouseEnter={() => setActiveIndex(index)}
+                onClick={() => selectSuggestion(item)}
               >
-                <Box fontWeight="bold">{s.name}</Box>
-                {s.released && (
-                  <Box fontSize="sm" color="gray.400">
-                    {s.released}
-                  </Box>
-                )}
-              </ListItem>
+                <span className="suggestion-title">{item.name}</span>
+                <span className="suggestion-year">
+                  {item.released ? item.released.slice(0, 4) : "Release date unknown"}
+                </span>
+                <span className="suggestion-arrow" aria-hidden="true">
+                  ↗
+                </span>
+              </button>
             ))}
-          </List>
-        </Box>
+            {!loadingSuggestions && suggestions.length === 0 && !message && (
+              <div className="suggestion-status">
+                No matching titles yet. Press enter to try a full search.
+              </div>
+            )}
+          </div>
+        )}
+      {message && (
+        <p className="search-message" role="alert">
+          {message}
+        </p>
       )}
-      {loadingSuggest && (
-        <Box
-          position="absolute"
-          top="100%"
-          left={0}
-          mt={2}
-          zIndex={11}
-          px={4}
-          py={2}
-          bg="gray.900"
-          borderRadius="xl"
+      {message && suggestionError && (
+        <button
+          className="search-retry"
+          type="button"
+          onClick={() => {
+            setMessage("");
+            setLoadingSuggestions(true);
+            setRetryCount((count) => count + 1);
+          }}
         >
-          <Spinner color="orange.300" size="sm" />
-        </Box>
+          Retry search
+        </button>
       )}
-      {error && (
-        <Box
-          color="red.300"
-          fontSize="lg"
-          mt={2}
-          fontFamily="Rajdhani, sans-serif"
-        >
-          {errorMessage}
-        </Box>
-      )}
-    </MotionBox>
+    </div>
   );
 }
-
-export { SearchBar };
