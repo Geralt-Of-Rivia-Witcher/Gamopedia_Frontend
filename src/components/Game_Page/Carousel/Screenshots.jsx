@@ -7,7 +7,7 @@ function validImageSource(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-export default function Screenshots({ gameName }) {
+export default function Screenshots({ gameName, hasVideos = false }) {
   const [shots, setShots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
@@ -84,7 +84,13 @@ export default function Screenshots({ gameName }) {
       </div>
     );
   if (!shots.length)
-    return <div className="media-state">No screenshots are available for this title.</div>;
+    return (
+      <div className="media-state">
+        {hasVideos
+          ? "No screenshots are listed for this title."
+          : "No media is listed for this title."}
+      </div>
+    );
 
   return (
     <>

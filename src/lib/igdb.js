@@ -106,6 +106,15 @@ function normalizeGame(game) {
   const storeGames = (game.external_games || []).filter(
     (entry) => entry.url && !/twitch/i.test(entry.external_game_source?.name || ""),
   );
+  const videoIds = new Set();
+  const videos = (game.videos || [])
+    .filter((video) => {
+      if (!/^[A-Za-z0-9_-]+$/.test(video.video_id || "") || videoIds.has(video.video_id))
+        return false;
+      videoIds.add(video.video_id);
+      return true;
+    })
+    .map((video) => ({ name: video.name || "Video", video_id: video.video_id }));
   const artwork = game.artworks?.[0]?.image_id;
   const cover = game.cover?.image_id;
   return {
@@ -146,6 +155,7 @@ function normalizeGame(game) {
       releaseFormat: entry.game_release_format?.format,
       store: { name: entry.external_game_source?.name || entry.platform?.name || "Store" },
     })),
+    videos,
     websites,
     website: websites.find((entry) => /official/i.test(entry.type))?.url || "",
     reddit_url: websites.find((entry) => /reddit/i.test(entry.type))?.url || "",
@@ -162,7 +172,7 @@ const GAME_FIELDS = `id,name,slug,first_release_date,summary,storyline,cover.ima
   aggregated_rating_count,total_rating,total_rating_count,
   websites.url,websites.type.type,external_games.url,external_games.name,external_games.year,
   external_games.game_release_format.format,external_games.external_game_source.name,external_games.platform.name,
-similar_games.name,similar_games.slug,collections.name,updated_at`;
+  similar_games.name,similar_games.slug,collections.name,videos.name,videos.video_id,updated_at`;
 
 function quote(value) {
   return String(value).replaceAll("\\", "\\\\").replaceAll('"', '\\"');

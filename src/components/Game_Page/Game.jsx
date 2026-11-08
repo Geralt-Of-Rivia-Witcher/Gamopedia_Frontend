@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { SearchBar } from "../Search_Bar/SearchBar.jsx";
 import Screenshots from "./Carousel/Screenshots.jsx";
+import VideoGallery from "./VideoGallery.jsx";
 import Footer from "../Footer/Footer.jsx";
 import { formatDate } from "../../utils/formatDate";
 
@@ -211,11 +212,24 @@ function Game({ game, editions = [] }) {
             <span className="eyebrow">A CLOSER LOOK</span>
             <span className="section-rule" />
           </div>
+          {game.videos?.length > 0 && (
+            <>
+              <div className="section-title-row">
+                <h2>Videos</h2>
+                <span>Select a preview to play</span>
+              </div>
+              <VideoGallery videos={game.videos} />
+            </>
+          )}
           <div className="section-title-row">
             <h2>Scenes from the game</h2>
             <span>Click an image to enlarge</span>
           </div>
-          <Screenshots key={game.slug} gameName={game.slug} />
+          <Screenshots
+            key={game.slug}
+            gameName={game.slug}
+            hasVideos={Boolean(game.videos?.length)}
+          />
         </section>
 
         <section className="details-section">
