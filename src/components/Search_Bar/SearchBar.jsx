@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 export function SearchBar({ compact = false }) {
   const router = useRouter();
+  const [isNavigating, startNavigation] = useTransition();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -16,6 +17,7 @@ export function SearchBar({ compact = false }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const requestId = useRef(0);
+  const busy = submitting || isNavigating;
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -63,15 +65,19 @@ export function SearchBar({ compact = false }) {
   }, []);
 
   const selectSuggestion = (suggestion) => {
+    if (busy) return;
     setQuery(suggestion.name);
     setOpen(false);
     setMessage("");
     setSuggestionError(false);
-    router.push(`/game/${suggestion.slug}`);
+    setLoadingSuggestions(false);
+    setSuggestions([]);
+    startNavigation(() => router.push(`/game/${suggestion.slug}`));
   };
 
   const submit = async (event) => {
     event.preventDefault();
+    if (busy) return;
     if (activeIndex >= 0 && suggestions[activeIndex]) {
       selectSuggestion(suggestions[activeIndex]);
       return;
@@ -131,7 +137,7 @@ export function SearchBar({ compact = false }) {
 
   return (
     <div className={`search-wrap${compact ? " search-wrap-compact" : ""}`} ref={rootRef}>
-      <form className="search-form" role="search" onSubmit={submit}>
+      <form className="search-form" role="search" onSubmit={submit} aria-busy={busy}>
         <label className="sr-only" htmlFor={listId}>
           Search video games
         </label>
@@ -142,6 +148,7 @@ export function SearchBar({ compact = false }) {
           id={listId}
           type="search"
           value={query}
+          disabled={busy}
           placeholder="Try a game title…"
           autoComplete="off"
           role="combobox"
@@ -156,10 +163,11 @@ export function SearchBar({ compact = false }) {
         <button
           className="search-submit"
           type="submit"
-          disabled={!query.trim() || submitting}
-          aria-label="Search games"
+          disabled={!query.trim() || busy}
+          aria-label={busy ? "Opening selected game" : "Search games"}
+          aria-busy={busy}
         >
-          {submitting ? (
+          {busy ? (
             <span className="button-spinner" aria-hidden="true" />
           ) : (
             <span aria-hidden="true">↗</span>
@@ -185,6 +193,7 @@ export function SearchBar({ compact = false }) {
                 type="button"
                 role="option"
                 aria-selected={activeIndex === index}
+                disabled={busy}
                 key={item.slug}
                 onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => selectSuggestion(item)}

@@ -103,7 +103,9 @@ function normalizeGame(game) {
     url: entry.url,
     type: entry.type?.type || "Website",
   }));
-  const storeGames = (game.external_games || []).filter((entry) => entry.url);
+  const storeGames = (game.external_games || []).filter(
+    (entry) => entry.url && !/twitch/i.test(entry.external_game_source?.name || ""),
+  );
   const artwork = game.artworks?.[0]?.image_id;
   const cover = game.cover?.image_id;
   return {
@@ -138,6 +140,10 @@ function normalizeGame(game) {
     stores: storeGames.map((entry) => ({
       id: entry.id,
       url: entry.url,
+      title: entry.name,
+      year: entry.year,
+      platform: entry.platform?.name,
+      releaseFormat: entry.game_release_format?.format,
       store: { name: entry.external_game_source?.name || entry.platform?.name || "Store" },
     })),
     websites,
@@ -154,7 +160,8 @@ const GAME_FIELDS = `id,name,slug,first_release_date,summary,storyline,cover.ima
   genres.name,platforms.name,involved_companies.developer,involved_companies.publisher,involved_companies.company.name,
   age_ratings.organization.name,age_ratings.rating_category.rating,rating,rating_count,aggregated_rating,
   aggregated_rating_count,total_rating,total_rating_count,
-  websites.url,websites.type.type,external_games.url,external_games.external_game_source.name,external_games.platform.name,
+  websites.url,websites.type.type,external_games.url,external_games.name,external_games.year,
+  external_games.game_release_format.format,external_games.external_game_source.name,external_games.platform.name,
 similar_games.name,similar_games.slug,collections.name,updated_at`;
 
 function quote(value) {

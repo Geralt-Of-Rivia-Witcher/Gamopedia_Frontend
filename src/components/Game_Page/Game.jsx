@@ -15,6 +15,47 @@ function listNames(items) {
     .join(", ");
 }
 
+function groupStoreListings(stores = [], gameName = "") {
+  const groupsByName = new Map();
+
+  stores.forEach((listing) => {
+    if (!listing?.url) return;
+    const name = listing.store?.name || "Store";
+    const groupKey = name.trim().toLocaleLowerCase();
+    if (!groupsByName.has(groupKey)) {
+      groupsByName.set(groupKey, { name: name.trim(), listings: [], urls: new Set() });
+    }
+    const group = groupsByName.get(groupKey);
+    if (group.urls.has(listing.url)) return;
+    group.urls.add(listing.url);
+
+    const title = listing.title?.trim();
+    const descriptors = [
+      title && title.toLocaleLowerCase() !== gameName.trim().toLocaleLowerCase() ? title : null,
+      listing.platform,
+      listing.releaseFormat,
+      listing.year,
+    ].filter(Boolean);
+    group.listings.push({
+      id: listing.id || listing.url,
+      url: listing.url,
+      label: descriptors.join(" · ") || "View listing",
+    });
+  });
+
+  return Array.from(groupsByName.values()).map(({ name, listings }) => {
+    const labelCounts = new Map();
+    return {
+      name,
+      listings: listings.map((listing) => {
+        const count = (labelCounts.get(listing.label) || 0) + 1;
+        labelCounts.set(listing.label, count);
+        return count > 1 ? { ...listing, label: `${listing.label} · ${count}` } : listing;
+      }),
+    };
+  });
+}
+
 function Detail({ label, children }) {
   return (
     <div className="detail-row">
@@ -40,6 +81,7 @@ function Game({ game, editions = [] }) {
     .replace(/<[^>]*>/g, "")
     .trim();
   const clipped = description.length > 560 && !expanded;
+  const storeGroups = groupStoreListings(game.stores, game.name);
   const details = [
     ["Release date", game.tba ? "To be announced" : formatDate(game.released)],
     ["Developer", listNames(game.developers)],
@@ -208,14 +250,38 @@ function Game({ game, editions = [] }) {
           <div className="availability-grid">
             <div>
               <h2>Available at</h2>
-              {game.stores?.length ? (
+              {storeGroups.length ? (
                 <ul className="link-list">
-                  {game.stores.map(({ id, store, url }) => (
-                    <li key={id}>
-                      <a href={url} target="_blank" rel="noreferrer">
-                        {store.name}
-                        <span>↗</span>
-                      </a>
+                  {storeGroups.map((group) => (
+                    <li key={group.name}>
+                      {group.listings.length === 1 ? (
+                        <a href={group.listings[0].url} target="_blank" rel="noreferrer">
+                          {group.name}
+                          <span>↗</span>
+                        </a>
+                      ) : (
+                        <details className="store-disclosure">
+                          <summary>
+                            <span>{group.name}</span>
+                            <span className="store-disclosure-meta">
+                              {group.listings.length} listings
+                              <span className="store-disclosure-icon" aria-hidden="true">
+                                ⌄
+                              </span>
+                            </span>
+                          </summary>
+                          <ul className="store-listings">
+                            {group.listings.map((listing) => (
+                              <li key={listing.id}>
+                                <a href={listing.url} target="_blank" rel="noreferrer">
+                                  {listing.label}
+                                  <span>↗</span>
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -228,7 +294,16 @@ function Game({ game, editions = [] }) {
               {editions.length ? (
                 <ul className="edition-list">
                   {editions.slice(0, 8).map((edition) => (
-                    <li key={edition.id}>{edition.name}</li>
+                    <li key={edition.id}>
+                      {edition.slug ? (
+                        <Link className="edition-link" href={`/game/${edition.slug}`}>
+                          {edition.name}
+                          <span aria-hidden="true">↗</span>
+                        </Link>
+                      ) : (
+                        edition.name
+                      )}
+                    </li>
                   ))}
                 </ul>
               ) : (
