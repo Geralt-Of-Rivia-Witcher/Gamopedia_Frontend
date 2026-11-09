@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { SearchBar } from "../Search_Bar/SearchBar";
 import Screenshots from "./Carousel/Screenshots";
 import VideoGallery from "./VideoGallery";
@@ -9,7 +10,13 @@ import Footer from "../Footer/Footer";
 import ThemeToggle from "../ThemeToggle";
 import { formatDate } from "../../utils/formatDate";
 import type { ReactNode } from "react";
-import type { GameDetails, GameEdition, NamedEntity, StoreListing } from "@/types/game";
+import type {
+  GameDetails,
+  GameEdition,
+  NamedEntity,
+  RelatedGame,
+  StoreListing,
+} from "@/types/game";
 
 interface StoreGroupListing {
   id: number | string;
@@ -95,6 +102,13 @@ function Game({ game, editions = [] }: { game: GameDetails; editions?: GameEditi
   const description = game.description_raw.replace(/<[^>]*>/g, "").trim();
   const clipped = description.length > 560 && !expanded;
   const storeGroups = groupStoreListings(game.stores, game.name);
+  const relatedGames: RelatedGame[] = [];
+  const relatedGameIds = new Set([game.id]);
+  game.similar_games.forEach((relatedGame) => {
+    if (!relatedGame.slug || relatedGameIds.has(relatedGame.id) || relatedGames.length >= 6) return;
+    relatedGameIds.add(relatedGame.id);
+    relatedGames.push(relatedGame);
+  });
   const details: Array<[string, ReactNode]> = [
     ["Release date", game.tba ? "To be announced" : formatDate(game.released)],
     ["Developer", listNames(game.developers)],
@@ -366,6 +380,48 @@ function Game({ game, editions = [] }: { game: GameDetails; editions?: GameEditi
             IGDB
           </a>
         </div>
+        {relatedGames.length > 0 && (
+          <section className="related-games-section" aria-labelledby="related-games-title">
+            <div className="section-heading">
+              <span className="eyebrow">MORE WORLDS TO EXPLORE</span>
+              <span className="section-rule" />
+            </div>
+            <div className="section-title-row related-games-title-row">
+              <h2 id="related-games-title">Similar games</h2>
+              <span>Picked from the IGDB catalogue</span>
+            </div>
+            <div className="related-game-grid">
+              {relatedGames.map((relatedGame) => (
+                <Link
+                  className="related-game-card"
+                  href={`/game/${relatedGame.slug}`}
+                  key={relatedGame.id}
+                  aria-label={`View ${relatedGame.name}`}
+                >
+                  <span className="related-game-cover">
+                    {relatedGame.cover_image ? (
+                      <Image
+                        src={relatedGame.cover_image}
+                        alt=""
+                        fill
+                        sizes="(max-width: 600px) 44vw, (max-width: 900px) 28vw, 16vw"
+                        unoptimized
+                      />
+                    ) : (
+                      <span className="related-game-cover-mark" aria-hidden="true">
+                        G
+                      </span>
+                    )}
+                    <span className="related-game-open" aria-hidden="true">
+                      ↗
+                    </span>
+                  </span>
+                  <span className="related-game-name">{relatedGame.name}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
       <Footer />
     </main>

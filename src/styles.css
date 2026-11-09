@@ -881,6 +881,88 @@ a {
 .screenshots-section {
   padding: 0 2vw 82px;
 }
+.related-games-section {
+  padding: 0 2vw 82px;
+}
+.section-title-row.related-games-title-row {
+  margin-bottom: 22px;
+}
+.related-game-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 18px 12px;
+}
+.related-game-card {
+  display: block;
+  min-width: 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+.related-game-cover {
+  position: relative;
+  display: block;
+  aspect-ratio: 0.76;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--paper-deep);
+}
+.related-game-cover img {
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+.related-game-card:hover .related-game-cover img {
+  transform: scale(1.035);
+}
+.related-game-cover-mark {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  background: var(--green);
+  color: var(--accent);
+  font: 700 clamp(34px, 5vw, 62px)/1 var(--display);
+}
+.related-game-open {
+  position: absolute;
+  right: 9px;
+  bottom: 8px;
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 1px solid rgba(241, 238, 229, 0.65);
+  background: rgba(36, 43, 39, 0.72);
+  color: #f1eee5;
+  font: 14px/1 var(--body);
+  opacity: 0;
+  transform: translateY(3px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+.related-game-card:hover .related-game-open,
+.related-game-card:focus-visible .related-game-open {
+  opacity: 1;
+  transform: translateY(0);
+}
+.related-game-name {
+  display: block;
+  padding: 9px 0 0;
+  border-top: 1px solid var(--line);
+  margin-top: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  transition: color 0.18s ease;
+}
+.related-game-card:hover .related-game-name {
+  color: var(--accent);
+}
+.related-game-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
 .section-title-row {
   display: flex;
   justify-content: space-between;
@@ -1453,6 +1535,7 @@ a {
     font-size: 14px;
   }
   .screenshots-section,
+  .related-games-section,
   .details-section,
   .availability-section {
     padding-right: 0;
@@ -1460,6 +1543,13 @@ a {
   }
   .screenshots-section {
     padding-bottom: 60px;
+  }
+  .related-games-section {
+    padding-bottom: 60px;
+  }
+  .related-game-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 17px 10px;
   }
   .section-title-row {
     align-items: flex-start;

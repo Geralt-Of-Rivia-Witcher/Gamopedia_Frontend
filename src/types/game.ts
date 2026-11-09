@@ -3,6 +3,11 @@ export interface NamedEntity {
   name: string;
 }
 
+export interface RelatedGame extends NamedEntity {
+  slug: string;
+  cover_image: string | null;
+}
+
 export interface GameSuggestion {
   name: string;
   slug: string;
@@ -72,7 +77,7 @@ export interface GameDetails {
   websites: GameWebsite[];
   website: string;
   reddit_url: string;
-  similar_games: NamedEntity[];
+  similar_games: RelatedGame[];
   collection: NamedEntity | null;
   game_time_to_beat: GameTimeToBeat | null;
   updated: string | null;

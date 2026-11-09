@@ -35,6 +35,10 @@ interface IGDBVideo {
   name?: string;
   video_id?: string;
 }
+interface IGDBSimilarGame extends IGDBNamed {
+  slug: string;
+  cover?: { image_id?: string };
+}
 interface IGDBAgeRating {
   id?: number;
   organization?: { name: string };
@@ -62,7 +66,7 @@ interface IGDBGame {
   websites?: IGDBWebsite[];
   external_games?: IGDBExternalGame[];
   videos?: IGDBVideo[];
-  similar_games?: IGDBNamed[];
+  similar_games?: IGDBSimilarGame[];
   collections?: IGDBNamed[];
   updated_at?: number;
 }
@@ -287,7 +291,12 @@ function normalizeGame(game: IGDBGame): GameDetails {
     websites,
     website: websites.find((entry) => /official/i.test(entry.type))?.url || "",
     reddit_url: websites.find((entry) => /reddit/i.test(entry.type))?.url || "",
-    similar_games: game.similar_games || [],
+    similar_games: (game.similar_games || []).map((similarGame) => ({
+      id: similarGame.id,
+      name: similarGame.name,
+      slug: similarGame.slug,
+      cover_image: imageUrl(similarGame.cover?.image_id, "cover_big"),
+    })),
     collection: game.collections?.[0] || null,
     game_time_to_beat: null,
     updated: game.updated_at ? new Date(game.updated_at * 1000).toISOString().slice(0, 10) : null,
@@ -300,7 +309,8 @@ const GAME_FIELDS = `id,name,slug,first_release_date,summary,storyline,cover.ima
   aggregated_rating_count,total_rating,total_rating_count,
   websites.url,websites.type.type,external_games.url,external_games.name,external_games.year,
   external_games.game_release_format.format,external_games.external_game_source.name,external_games.platform.name,
-  similar_games.name,similar_games.slug,collections.name,videos.name,videos.video_id,updated_at`;
+  similar_games.name,similar_games.slug,similar_games.cover.image_id,collections.name,
+  videos.name,videos.video_id,updated_at`;
 
 function quote(value: string | number) {
   return String(value).replaceAll("\\", "\\\\").replaceAll('"', '\\"');
