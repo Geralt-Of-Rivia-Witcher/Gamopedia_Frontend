@@ -229,6 +229,11 @@ a {
 .theme-icon-sun {
   display: block;
   line-height: 1;
+}
+.theme-icon-moon {
+  transform: translate(1px, 1px);
+}
+.theme-icon-sun {
   transform: translateY(-1px);
 }
 .theme-icon-sun {
