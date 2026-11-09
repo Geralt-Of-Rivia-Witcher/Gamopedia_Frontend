@@ -104,7 +104,7 @@ function normalizeGame(game) {
     type: entry.type?.type || "Website",
   }));
   const storeGames = (game.external_games || []).filter(
-    (entry) => entry.url && !/twitch/i.test(entry.external_game_source?.name || ""),
+    (entry) => entry.url && !/(twitch|youtube)/i.test(entry.external_game_source?.name || ""),
   );
   const videoIds = new Set();
   const videos = (game.videos || [])

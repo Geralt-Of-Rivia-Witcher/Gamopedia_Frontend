@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { SearchBar } from "../Search_Bar/SearchBar.jsx";
 import Footer from "../Footer/Footer.jsx";
+import ThemeToggle from "../ThemeToggle.jsx";
 
 function Home() {
   return (
@@ -11,7 +12,10 @@ function Home() {
           <span className="wordmark-mark">G</span>
           <span>GAMOPEDIA</span>
         </Link>
-        <span className="header-note">THE VIDEO GAME INDEX</span>
+        <div className="site-header-tools">
+          <span className="header-note">THE VIDEO GAME INDEX</span>
+          <ThemeToggle />
+        </div>
       </header>
 
       <section className="home-intro" aria-labelledby="home-title">

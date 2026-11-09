@@ -6,6 +6,7 @@ import { SearchBar } from "../Search_Bar/SearchBar.jsx";
 import Screenshots from "./Carousel/Screenshots.jsx";
 import VideoGallery from "./VideoGallery.jsx";
 import Footer from "../Footer/Footer.jsx";
+import ThemeToggle from "../ThemeToggle.jsx";
 import { formatDate } from "../../utils/formatDate";
 
 function listNames(items) {
@@ -105,8 +106,11 @@ function Game({ game, editions = [] }) {
           <span className="wordmark-mark">G</span>
           <span>GAMOPEDIA</span>
         </Link>
-        <div className="game-header-search">
-          <SearchBar compact />
+        <div className="game-header-tools">
+          <div className="game-header-search">
+            <SearchBar compact />
+          </div>
+          <ThemeToggle compact />
         </div>
       </header>
 

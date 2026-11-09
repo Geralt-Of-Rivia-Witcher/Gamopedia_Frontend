@@ -1,6 +1,7 @@
 import "@fontsource/rajdhani/400.css";
 import "@fontsource/rajdhani/600.css";
 import "@fontsource/rajdhani/700.css";
+import Script from "next/script";
 import "../styles.css";
 
 export const metadata = {
@@ -18,7 +19,27 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <Script id="gamopedia-theme-init" strategy="beforeInteractive">
+          {`(() => {
+            try {
+              const saved = localStorage.getItem("gamopedia-theme");
+              const theme = saved === "light" || saved === "dark"
+                ? saved
+                : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+              document.documentElement.dataset.theme = theme;
+              document.documentElement.style.colorScheme = theme;
+              document.querySelector('meta[name="theme-color"]')?.setAttribute(
+                "content",
+                theme === "dark" ? "#18201b" : "#f1eee5"
+              );
+            } catch {
+              document.documentElement.dataset.theme = "light";
+            }
+          })();`}
+        </Script>
+      </head>
       <body>{children}</body>
     </html>
   );
