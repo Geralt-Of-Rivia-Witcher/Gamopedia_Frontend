@@ -13,6 +13,7 @@ import type { ReactNode } from "react";
 import type {
   GameDetails,
   GameEdition,
+  GameLanguageSupport,
   NamedEntity,
   RelatedGame,
   StoreListing,
@@ -87,6 +88,31 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+function LanguageSupportList({ languages }: { languages: GameLanguageSupport[] }) {
+  const hasSupportDetails = languages.some((language) => language.supportTypes.length > 0);
+
+  return (
+    <div className="language-support">
+      <span>{languages.map((language) => language.name).join(" · ")}</span>
+      {hasSupportDetails && (
+        <details className="language-support-disclosure">
+          <summary>Show support details</summary>
+          <ul>
+            {languages.map((language) => (
+              <li key={language.name}>
+                <strong>{language.name}</strong>
+                {language.supportTypes.length > 0 && (
+                  <span>{language.supportTypes.join(", ")}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
+
 function Game({ game, editions = [] }: { game: GameDetails; editions?: GameEdition[] }) {
   const [expanded, setExpanded] = useState(false);
   if (!game) return null;
@@ -123,6 +149,14 @@ function Game({ game, editions = [] }: { game: GameDetails; editions?: GameEditi
         : "Not listed",
     ],
   ];
+  const additionalDetails: Array<[string, ReactNode]> = [];
+  if (game.themes.length) additionalDetails.push(["Themes", listNames(game.themes)]);
+  if (game.game_modes.length) additionalDetails.push(["Game modes", listNames(game.game_modes)]);
+  if (game.player_perspectives.length)
+    additionalDetails.push(["Player perspective", listNames(game.player_perspectives)]);
+  if (game.languages.length)
+    additionalDetails.push(["Languages", <LanguageSupportList languages={game.languages} />]);
+  details.splice(4, 0, ...additionalDetails);
 
   return (
     <main className="game-page">

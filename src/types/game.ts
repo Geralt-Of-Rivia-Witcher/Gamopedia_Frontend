@@ -8,6 +8,11 @@ export interface RelatedGame extends NamedEntity {
   cover_image: string | null;
 }
 
+export interface GameLanguageSupport {
+  name: string;
+  supportTypes: string[];
+}
+
 export interface GameSuggestion {
   name: string;
   slug: string;
@@ -61,6 +66,10 @@ export interface GameDetails {
   description_raw: string;
   background_image: string | null;
   genres: NamedEntity[];
+  themes: NamedEntity[];
+  game_modes: NamedEntity[];
+  player_perspectives: NamedEntity[];
+  languages: GameLanguageSupport[];
   platforms: NamedEntity[];
   developers: NamedEntity[];
   publishers: NamedEntity[];

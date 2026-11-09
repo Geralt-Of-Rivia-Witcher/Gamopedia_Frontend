@@ -3,6 +3,7 @@ import { cache } from "react";
 import type {
   EditionsResult,
   GameDetails,
+  GameLanguageSupport,
   GameResult,
   GameSuggestion,
   GameTimeToBeat,
@@ -39,6 +40,10 @@ interface IGDBSimilarGame extends IGDBNamed {
   slug: string;
   cover?: { image_id?: string };
 }
+interface IGDBLanguageSupport {
+  language?: IGDBNamed;
+  language_support_type?: IGDBNamed;
+}
 interface IGDBAgeRating {
   id?: number;
   organization?: { name: string };
@@ -54,6 +59,10 @@ interface IGDBGame {
   cover?: { image_id?: string };
   artworks?: Array<{ image_id?: string }>;
   genres?: IGDBNamed[];
+  themes?: IGDBNamed[];
+  game_modes?: IGDBNamed[];
+  player_perspectives?: IGDBNamed[];
+  language_supports?: IGDBLanguageSupport[];
   platforms?: IGDBNamed[];
   involved_companies?: IGDBCompanyCredit[];
   age_ratings?: IGDBAgeRating[];
@@ -226,6 +235,14 @@ function imageUrl(imageId: string | undefined, size: string): string | null {
 
 function normalizeGame(game: IGDBGame): GameDetails {
   const companies = game.involved_companies || [];
+  const languagesByName = new Map<string, Set<string>>();
+  (game.language_supports || []).forEach((support) => {
+    const languageName = support.language?.name?.trim();
+    if (!languageName) return;
+    if (!languagesByName.has(languageName)) languagesByName.set(languageName, new Set());
+    const supportType = support.language_support_type?.name?.trim();
+    if (supportType) languagesByName.get(languageName)?.add(supportType);
+  });
   const ageRating =
     game.age_ratings?.find((entry) => entry.organization?.name === "ESRB") || game.age_ratings?.[0];
   const ageRatingName = ageRating?.rating_category?.rating;
@@ -257,6 +274,13 @@ function normalizeGame(game: IGDBGame): GameDetails {
     description_raw: game.summary || game.storyline || "",
     background_image: imageUrl(artwork || cover, artwork ? "1080p" : "cover_big"),
     genres: game.genres || [],
+    themes: game.themes || [],
+    game_modes: game.game_modes || [],
+    player_perspectives: game.player_perspectives || [],
+    languages: Array.from(languagesByName, ([name, supportTypes]): GameLanguageSupport => ({
+      name,
+      supportTypes: Array.from(supportTypes),
+    })),
     platforms: game.platforms || [],
     developers: companies
       .filter((entry): entry is IGDBCompanyCredit & { company: IGDBNamed } =>
@@ -304,7 +328,9 @@ function normalizeGame(game: IGDBGame): GameDetails {
 }
 
 const GAME_FIELDS = `id,name,slug,first_release_date,summary,storyline,cover.image_id,artworks.image_id,
-  genres.name,platforms.name,involved_companies.developer,involved_companies.publisher,involved_companies.company.name,
+  genres.name,themes.name,game_modes.name,player_perspectives.name,
+  language_supports.language.name,language_supports.language_support_type.name,
+  platforms.name,involved_companies.developer,involved_companies.publisher,involved_companies.company.name,
   age_ratings.organization.name,age_ratings.rating_category.rating,rating,rating_count,aggregated_rating,
   aggregated_rating_count,total_rating,total_rating_count,
   websites.url,websites.type.type,external_games.url,external_games.name,external_games.year,
