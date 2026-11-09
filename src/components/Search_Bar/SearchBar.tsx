@@ -2,12 +2,17 @@
 
 import React, { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import type { FormEvent, ChangeEvent, KeyboardEvent } from "react";
+import type { ApiErrorResponse, GameResult, GameSuggestion } from "@/types/game";
 
-export function SearchBar({ compact = false }) {
+interface SearchBarProps {
+  compact?: boolean;
+}
+export function SearchBar({ compact = false }: SearchBarProps) {
   const router = useRouter();
   const [isNavigating, startNavigation] = useTransition();
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState<GameSuggestion[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [suggestionError, setSuggestionError] = useState(false);
@@ -15,7 +20,7 @@ export function SearchBar({ compact = false }) {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [open, setOpen] = useState(false);
-  const rootRef = useRef(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const requestId = useRef(0);
   const busy = submitting || isNavigating;
 
@@ -28,9 +33,12 @@ export function SearchBar({ compact = false }) {
     const timer = window.setTimeout(() => {
       fetch(`/api/suggest?query=${encodeURIComponent(trimmed)}`)
         .then(async (response) => {
-          const data = await response.json().catch(() => ({}));
-          if (!response.ok) throw new Error(data.error || "Suggestion request failed.");
-          return data;
+          const payload: GameSuggestion[] | ApiErrorResponse = await response.json();
+          if (!response.ok) {
+            const message = "error" in payload ? payload.error : undefined;
+            throw new Error(message || "Suggestion request failed.");
+          }
+          return Array.isArray(payload) ? payload : [];
         })
         .then((data) => {
           if (id !== requestId.current) return;
@@ -41,7 +49,11 @@ export function SearchBar({ compact = false }) {
         .catch((error) => {
           if (id === requestId.current) {
             setSuggestions([]);
-            setMessage(error.message || "Couldn’t search the game catalogue. Please try again.");
+            setMessage(
+              error instanceof Error
+                ? error.message
+                : "Couldn’t search the game catalogue. Please try again.",
+            );
             setSuggestionError(true);
             setOpen(true);
           }
@@ -57,14 +69,19 @@ export function SearchBar({ compact = false }) {
   }, [query, retryCount]);
 
   useEffect(() => {
-    const onPointerDown = (event) => {
-      if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
+    const onPointerDown = (event: PointerEvent) => {
+      if (
+        rootRef.current &&
+        event.target instanceof Node &&
+        !rootRef.current.contains(event.target)
+      )
+        setOpen(false);
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
-  const selectSuggestion = (suggestion) => {
+  const selectSuggestion = (suggestion: GameSuggestion) => {
     if (busy) return;
     setQuery(suggestion.name);
     setOpen(false);
@@ -75,7 +92,7 @@ export function SearchBar({ compact = false }) {
     startNavigation(() => router.push(`/game/${suggestion.slug}`));
   };
 
-  const submit = async (event) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (busy) return;
     if (activeIndex >= 0 && suggestions[activeIndex]) {
@@ -94,21 +111,28 @@ export function SearchBar({ compact = false }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ gameName: value }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Game search failed.");
-      if (data?.detail === "Not found." || !data?.slug) {
+      const payload: GameResult | ApiErrorResponse = await response.json();
+      if (!response.ok) {
+        const message = "error" in payload ? payload.error : undefined;
+        throw new Error(message || "Game search failed.");
+      }
+      if (!("slug" in payload) || !payload.slug) {
         setMessage("No game found. Check the title and try again.");
       } else {
-        router.push(`/game/${data.slug}`);
+        router.push(`/game/${payload.slug}`);
       }
     } catch (error) {
-      setMessage(error.message || "Couldn’t reach the game catalogue. Please try again.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Couldn’t reach the game catalogue. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  const onKeyDown = (event) => {
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "ArrowDown" && suggestions.length) {
       event.preventDefault();
       setOpen(true);
@@ -122,7 +146,7 @@ export function SearchBar({ compact = false }) {
     }
   };
 
-  const onQueryChange = (event) => {
+  const onQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setQuery(value);
     setMessage("");

@@ -2,17 +2,25 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import type { ApiErrorResponse, Screenshot } from "@/types/game";
+import type { ScreenshotResult } from "@/types/game";
 
-function validImageSource(value) {
+function validImageSource(value: string | null | undefined): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-export default function Screenshots({ gameName, hasVideos = false }) {
-  const [shots, setShots] = useState([]);
+export default function Screenshots({
+  gameName,
+  hasVideos = false,
+}: {
+  gameName: string;
+  hasVideos?: boolean;
+}) {
+  const [shots, setShots] = useState<Screenshot[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(null);
-  const dialogRef = useRef(null);
-  const closeRef = useRef(null);
+  const [selected, setSelected] = useState<number | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const isOpen = selected !== null;
 
   useEffect(() => {
@@ -22,14 +30,13 @@ export default function Screenshots({ gameName, hasVideos = false }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ gameName }),
     })
-      .then((response) => {
+      .then(async (response) => {
         if (!response.ok) throw new Error("Screenshot request failed");
-        return response.json();
+        const payload: ScreenshotResult | ApiErrorResponse = await response.json();
+        return "results" in payload ? payload.results : [];
       })
-      .then((data) => {
-        const validShots = (Array.isArray(data?.results) ? data.results : []).filter((shot) =>
-          validImageSource(shot?.image),
-        );
+      .then((data: Screenshot[]) => {
+        const validShots = data.filter((shot) => validImageSource(shot.image));
         if (mounted) setShots(validShots);
       })
       .catch(() => {
@@ -44,10 +51,10 @@ export default function Screenshots({ gameName, hasVideos = false }) {
   }, [gameName]);
 
   const move = useCallback(
-    (direction) =>
+    (direction: number) =>
       setSelected((index) => {
         if (!shots.length) return null;
-        const current = Number.isInteger(index) ? index : 0;
+        const current = typeof index === "number" ? index : 0;
         return (current + direction + shots.length) % shots.length;
       }),
     [shots.length],
@@ -61,7 +68,7 @@ export default function Screenshots({ gameName, hasVideos = false }) {
 
   useEffect(() => {
     if (!isOpen) return undefined;
-    const onKeyDown = (event) => {
+    const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "ArrowLeft") move(-1);
       if (event.key === "ArrowRight") move(1);
     };
@@ -73,8 +80,8 @@ export default function Screenshots({ gameName, hasVideos = false }) {
     if (dialogRef.current?.open) dialogRef.current.close();
     setSelected(null);
   };
-  const open = (index) => setSelected(index);
-  const selectedShot = Number.isInteger(selected) ? shots[selected] : null;
+  const open = (index: number) => setSelected(index);
+  const selectedShot = typeof selected === "number" ? shots[selected] : null;
   const selectedImage = validImageSource(selectedShot?.image);
 
   if (loading)
@@ -153,9 +160,9 @@ export default function Screenshots({ gameName, hasVideos = false }) {
           {selectedImage ? (
             <Image
               src={selectedImage}
-              alt={`${gameName} screenshot ${selected + 1}`}
-              width={selectedShot.width || 1920}
-              height={selectedShot.height || 1080}
+              alt={`${gameName} screenshot ${(selected ?? 0) + 1}`}
+              width={selectedShot?.width || 1920}
+              height={selectedShot?.height || 1080}
               unoptimized
             />
           ) : (

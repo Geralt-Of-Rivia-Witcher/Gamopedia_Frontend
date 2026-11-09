@@ -3,21 +3,23 @@ import "@fontsource/rajdhani/600.css";
 import "@fontsource/rajdhani/700.css";
 import Script from "next/script";
 import "../styles.css";
+import type { ReactNode } from "react";
+import type { Metadata, Viewport } from "next";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Gamopedia — The video game index",
   description:
     "Search the video game index for game details, creators, platforms, ratings, and screenshots.",
   icons: { icon: "/favicon.png" },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: "#f1eee5",
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

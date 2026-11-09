@@ -1,5 +1,9 @@
 import { getEditions, getGame, getScreenshots, suggestGames } from "@/lib/igdb";
 
+type Endpoint = keyof typeof allowedMethods;
+interface RouteContext {
+  params: Promise<{ endpoint: string }>;
+}
 const allowedMethods = {
   suggest: ["GET"],
   gameName: ["POST"],
@@ -7,12 +11,17 @@ const allowedMethods = {
   screenshots: ["POST"],
 };
 
-async function handle(request, context) {
+function isEndpoint(value: string): value is Endpoint {
+  return Object.hasOwn(allowedMethods, value);
+}
+
+function hasApiStatus(error: Error): error is Error & { status: number; authentication?: boolean } {
+  return "status" in error && typeof error.status === "number";
+}
+
+async function handle(request: Request, context: RouteContext): Promise<Response> {
   const { endpoint } = await context.params;
-  if (
-    !Object.hasOwn(allowedMethods, endpoint) ||
-    !allowedMethods[endpoint].includes(request.method)
-  ) {
+  if (!isEndpoint(endpoint) || !allowedMethods[endpoint].includes(request.method)) {
     return Response.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -22,7 +31,7 @@ async function handle(request, context) {
       return Response.json(await suggestGames(url.searchParams.get("query")));
     }
 
-    const body = await request.json();
+    const body: { gameName?: string } | null = await request.json();
     const gameName = body?.gameName;
     if (typeof gameName !== "string" || !gameName.trim()) {
       return Response.json({ error: "A game name is required." }, { status: 400 });
@@ -46,8 +55,14 @@ async function handle(request, context) {
       );
     }
 
-    const igdbStatus = error?.status;
-    if (error?.authentication || igdbStatus === 400 || igdbStatus === 401 || igdbStatus === 403) {
+    const apiError = error instanceof Error && hasApiStatus(error) ? error : null;
+    const igdbStatus = apiError?.status;
+    if (
+      apiError?.authentication ||
+      igdbStatus === 400 ||
+      igdbStatus === 401 ||
+      igdbStatus === 403
+    ) {
       return Response.json(
         {
           error: `IGDB rejected the credentials (HTTP ${igdbStatus}). Check the Twitch app client ID and secret.`,

@@ -17,6 +17,8 @@ yarn install
 yarn dev
 ```
 
+Run `yarn typecheck` to check the strict TypeScript source.
+
 Create `frontend/.env.local` with the credentials from your Twitch developer app:
 
 ```env
@@ -42,6 +44,7 @@ The deployment process must run `yarn build` before `yarn start`. The provided `
 ## Structure
 
 - `src/app/` contains the home page, game route, and same-origin API handlers.
-- `src/lib/igdb.js` handles IGDB authentication, requests, caching, and data normalization.
+- `src/lib/igdb.ts` handles IGDB authentication, requests, caching, and data normalization.
+- `src/types/game.ts` defines the catalogue data types shared by the server and UI.
 - `src/components/` contains the search, game detail, screenshot viewer, and footer UI.
 - `src/styles.css` and `DESIGN.md` define the visual system.

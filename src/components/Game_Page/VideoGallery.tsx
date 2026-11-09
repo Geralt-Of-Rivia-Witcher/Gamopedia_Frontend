@@ -2,18 +2,19 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import type { GameVideo } from "@/types/game";
 
-function isValidVideoId(videoId) {
+function isValidVideoId(videoId: string): boolean {
   return typeof videoId === "string" && /^[A-Za-z0-9_-]+$/.test(videoId);
 }
 
-export default function VideoGallery({ videos = [] }) {
-  const [activeIndex, setActiveIndex] = useState(null);
-  const dialogRef = useRef(null);
-  const closeRef = useRef(null);
-  const triggerRef = useRef(null);
+export default function VideoGallery({ videos = [] }: { videos?: GameVideo[] }) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const availableVideos = videos.filter((video) => isValidVideoId(video?.video_id));
-  const activeVideo = Number.isInteger(activeIndex) ? availableVideos[activeIndex] : null;
+  const activeVideo = typeof activeIndex === "number" ? availableVideos[activeIndex] : null;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -30,10 +31,10 @@ export default function VideoGallery({ videos = [] }) {
   }, []);
 
   const move = useCallback(
-    (direction) => {
+    (direction: number) => {
       setActiveIndex((index) => {
         if (!availableVideos.length) return null;
-        const current = Number.isInteger(index) ? index : 0;
+        const current = typeof index === "number" ? index : 0;
         return (current + direction + availableVideos.length) % availableVideos.length;
       });
     },
@@ -42,7 +43,7 @@ export default function VideoGallery({ videos = [] }) {
 
   useEffect(() => {
     if (!activeVideo) return undefined;
-    const onKeyDown = (event) => {
+    const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
         close();

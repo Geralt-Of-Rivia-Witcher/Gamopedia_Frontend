@@ -1,17 +1,137 @@
 import "server-only";
 import { cache } from "react";
+import type {
+  EditionsResult,
+  GameDetails,
+  GameResult,
+  GameSuggestion,
+  GameTimeToBeat,
+  ScreenshotResult,
+} from "@/types/game";
+
+interface IGDBNamed {
+  id: number;
+  name: string;
+}
+interface IGDBCompanyCredit {
+  developer?: boolean;
+  publisher?: boolean;
+  company?: IGDBNamed;
+}
+interface IGDBWebsite {
+  url: string;
+  type?: { type: string };
+}
+interface IGDBExternalGame {
+  id: number;
+  url?: string;
+  name?: string;
+  year?: number;
+  game_release_format?: { format: string };
+  external_game_source?: { name: string };
+  platform?: IGDBNamed;
+}
+interface IGDBVideo {
+  name?: string;
+  video_id?: string;
+}
+interface IGDBAgeRating {
+  id?: number;
+  organization?: { name: string };
+  rating_category?: { rating: string };
+}
+interface IGDBGame {
+  id: number;
+  name: string;
+  slug: string;
+  first_release_date?: number;
+  summary?: string;
+  storyline?: string;
+  cover?: { image_id?: string };
+  artworks?: Array<{ image_id?: string }>;
+  genres?: IGDBNamed[];
+  platforms?: IGDBNamed[];
+  involved_companies?: IGDBCompanyCredit[];
+  age_ratings?: IGDBAgeRating[];
+  rating?: number;
+  rating_count?: number;
+  aggregated_rating?: number;
+  aggregated_rating_count?: number;
+  total_rating?: number;
+  total_rating_count?: number;
+  websites?: IGDBWebsite[];
+  external_games?: IGDBExternalGame[];
+  videos?: IGDBVideo[];
+  similar_games?: IGDBNamed[];
+  collections?: IGDBNamed[];
+  updated_at?: number;
+}
+interface IGDBGameReference {
+  id: number;
+  slug: string;
+}
+interface IGDBSuggestion {
+  name: string;
+  slug: string;
+  first_release_date?: number;
+}
+interface IGDBEdition {
+  id: number;
+  name: string;
+  slug: string;
+  first_release_date?: number;
+}
+interface IGDBScreenshot {
+  id: number;
+  image_id?: string;
+  width: number;
+  height: number;
+}
+interface IGDBTokenResponse {
+  access_token: string;
+  expires_in: number;
+  token_type: string;
+}
+interface CachedValue<T> {
+  data: T;
+  timestamp: number;
+}
+class IGDBRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status?: number,
+    readonly authentication = false,
+  ) {
+    super(message);
+    this.name = "IGDBRequestError";
+  }
+}
+
+function hasVideoId(video: IGDBVideo): video is IGDBVideo & { video_id: string } {
+  return typeof video.video_id === "string" && /^[A-Za-z0-9_-]+$/.test(video.video_id);
+}
 
 const IGDB_API = "https://api.igdb.com/v4";
 const TWITCH_TOKEN_URL = "https://id.twitch.tv/oauth2/token";
 const SEARCH_TTL = 5 * 60 * 1000;
 const RESPONSE_TTL = 5 * 60 * 1000;
-const searchCache = new Map();
-const responseCache = new Map();
-const pendingQueries = new Map();
+const searchCache = new Map<string, CachedValue<GameSuggestion[]>>();
+const gameCache = new Map<string, CachedValue<IGDBGame[]>>();
+const referenceCache = new Map<string, CachedValue<IGDBGameReference[]>>();
+const suggestionCache = new Map<string, CachedValue<IGDBSuggestion[]>>();
+const editionCache = new Map<string, CachedValue<IGDBEdition[]>>();
+const screenshotCache = new Map<string, CachedValue<IGDBScreenshot[]>>();
+const timeCache = new Map<string, CachedValue<GameTimeToBeat[]>>();
+const pendingGames = new Map<string, Promise<IGDBGame[]>>();
+const pendingReferences = new Map<string, Promise<IGDBGameReference[]>>();
+const pendingSuggestions = new Map<string, Promise<IGDBSuggestion[]>>();
+const pendingEditions = new Map<string, Promise<IGDBEdition[]>>();
+const pendingScreenshots = new Map<string, Promise<IGDBScreenshot[]>>();
+const pendingTimes = new Map<string, Promise<GameTimeToBeat[]>>();
 
-let accessToken;
+let accessToken: string | undefined;
 let tokenExpiresAt = 0;
-let tokenRequest;
+let tokenRequest: Promise<string> | null = null;
 
 function getCredentials() {
   const clientId = process.env.IGDB_CLIENT_ID;
@@ -32,12 +152,9 @@ async function getAccessToken() {
       url.searchParams.set("client_secret", clientSecret);
       url.searchParams.set("grant_type", "client_credentials");
       const response = await fetch(url, { method: "POST", cache: "no-store" });
-      const data = await response.json().catch(() => ({}));
+      const data: IGDBTokenResponse = await response.json();
       if (!response.ok || !data.access_token) {
-        const error = new Error("IGDB authentication failed.");
-        error.status = response.status;
-        error.authentication = true;
-        throw error;
+        throw new IGDBRequestError("IGDB authentication failed.", response.status, true);
       }
       accessToken = data.access_token;
       tokenExpiresAt = Date.now() + Math.max(60, data.expires_in - 300) * 1000;
@@ -49,20 +166,31 @@ async function getAccessToken() {
   return tokenRequest;
 }
 
-async function queryIgdb(endpoint, query) {
+async function queryIgdb<T>(
+  endpoint: string,
+  query: string,
+  cache: Map<string, CachedValue<T[]>>,
+  pendingQueries: Map<string, Promise<T[]>>,
+): Promise<T[]> {
   const cacheKey = `${endpoint}:${query}`;
-  const cached = responseCache.get(cacheKey);
+  const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < RESPONSE_TTL) return cached.data;
-  if (pendingQueries.has(cacheKey)) return pendingQueries.get(cacheKey);
+  const pendingQuery = pendingQueries.get(cacheKey);
+  if (pendingQuery) return pendingQuery;
 
-  const pending = requestIgdb(endpoint, query, cacheKey).finally(() =>
+  const pending = requestIgdb<T>(endpoint, query, cacheKey, cache).finally(() =>
     pendingQueries.delete(cacheKey),
   );
   pendingQueries.set(cacheKey, pending);
   return pending;
 }
 
-async function requestIgdb(endpoint, query, cacheKey) {
+async function requestIgdb<T>(
+  endpoint: string,
+  query: string,
+  cacheKey: string,
+  cache: Map<string, CachedValue<T[]>>,
+): Promise<T[]> {
   const { clientId } = getCredentials();
   const token = await getAccessToken();
   const response = await fetch(`${IGDB_API}/${endpoint}`, {
@@ -76,25 +204,23 @@ async function requestIgdb(endpoint, query, cacheKey) {
     body: query,
     cache: "no-store",
   });
-  const data = await response.json().catch(() => ({}));
+  const data: T[] = await response.json();
   if (!response.ok) {
     if (response.status === 401 && accessToken === token) {
       accessToken = undefined;
       tokenExpiresAt = 0;
     }
-    const error = new Error("IGDB request failed.");
-    error.status = response.status;
-    throw error;
+    throw new IGDBRequestError("IGDB request failed.", response.status);
   }
-  responseCache.set(cacheKey, { data, timestamp: Date.now() });
+  cache.set(cacheKey, { data, timestamp: Date.now() });
   return data;
 }
 
-function imageUrl(imageId, size) {
+function imageUrl(imageId: string | undefined, size: string): string | null {
   return imageId ? `https://images.igdb.com/igdb/image/upload/t_${size}/${imageId}.jpg` : null;
 }
 
-function normalizeGame(game) {
+function normalizeGame(game: IGDBGame): GameDetails {
   const companies = game.involved_companies || [];
   const ageRating =
     game.age_ratings?.find((entry) => entry.organization?.name === "ESRB") || game.age_ratings?.[0];
@@ -104,13 +230,13 @@ function normalizeGame(game) {
     type: entry.type?.type || "Website",
   }));
   const storeGames = (game.external_games || []).filter(
-    (entry) => entry.url && !/(twitch|youtube)/i.test(entry.external_game_source?.name || ""),
+    (entry): entry is IGDBExternalGame & { url: string } =>
+      Boolean(entry.url && !/(twitch|youtube)/i.test(entry.external_game_source?.name || "")),
   );
   const videoIds = new Set();
   const videos = (game.videos || [])
-    .filter((video) => {
-      if (!/^[A-Za-z0-9_-]+$/.test(video.video_id || "") || videoIds.has(video.video_id))
-        return false;
+    .filter((video): video is IGDBVideo & { video_id: string } => {
+      if (!hasVideoId(video) || videoIds.has(video.video_id)) return false;
       videoIds.add(video.video_id);
       return true;
     })
@@ -129,14 +255,16 @@ function normalizeGame(game) {
     genres: game.genres || [],
     platforms: game.platforms || [],
     developers: companies
-      .filter((entry) => entry.developer)
-      .map((entry) => entry.company)
-      .filter(Boolean),
+      .filter((entry): entry is IGDBCompanyCredit & { company: IGDBNamed } =>
+        Boolean(entry.developer && entry.company),
+      )
+      .map((entry) => entry.company),
     publishers: companies
-      .filter((entry) => entry.publisher)
-      .map((entry) => entry.company)
-      .filter(Boolean),
-    age_ratings: game.age_ratings || [],
+      .filter((entry): entry is IGDBCompanyCredit & { company: IGDBNamed } =>
+        Boolean(entry.publisher && entry.company),
+      )
+      .map((entry) => entry.company),
+    age_ratings: (game.age_ratings || []).flatMap((entry) => (entry.id ? [{ id: entry.id }] : [])),
     esrb_rating: ageRatingName
       ? { name: `${ageRating.organization?.name || "Age rating"}: ${ageRatingName}` }
       : null,
@@ -174,19 +302,21 @@ const GAME_FIELDS = `id,name,slug,first_release_date,summary,storyline,cover.ima
   external_games.game_release_format.format,external_games.external_game_source.name,external_games.platform.name,
   similar_games.name,similar_games.slug,collections.name,videos.name,videos.video_id,updated_at`;
 
-function quote(value) {
+function quote(value: string | number) {
   return String(value).replaceAll("\\", "\\\\").replaceAll('"', '\\"');
 }
 
-async function findBySlug(slug, fields = "id,slug") {
+async function findBySlug(slug: string): Promise<IGDBGameReference | null> {
   const result = await queryIgdb(
     "games",
-    `fields ${fields}; where slug = "${quote(slug)}"; limit 1;`,
+    `fields id,slug; where slug = "${quote(slug)}"; limit 1;`,
+    referenceCache,
+    pendingReferences,
   );
-  return result[0] || null;
+  return result[0] ?? null;
 }
 
-export async function suggestGames(query) {
+export async function suggestGames(query: string | null): Promise<GameSuggestion[]> {
   const normalizedQuery = String(query || "").trim();
   if (normalizedQuery.length < 2) return [];
   const cacheKey = normalizedQuery.toLowerCase();
@@ -196,6 +326,8 @@ export async function suggestGames(query) {
   const results = await queryIgdb(
     "games",
     `search "${quote(normalizedQuery)}"; fields name,slug,first_release_date,game_type; where version_parent = null; limit 7;`,
+    suggestionCache,
+    pendingSuggestions,
   );
   const suggestions = results.map((game) => ({
     name: game.name,
@@ -208,16 +340,26 @@ export async function suggestGames(query) {
   return suggestions;
 }
 
-export const getGame = cache(async (nameOrSlug) => {
+export const getGame = cache(async (nameOrSlug: string): Promise<GameResult> => {
   const value = String(nameOrSlug || "").trim();
   if (!value) return { detail: "Not found." };
-  let game = await findBySlug(value, GAME_FIELDS);
+  let game: IGDBGame | null =
+    (
+      await queryIgdb(
+        "games",
+        `fields ${GAME_FIELDS}; where slug = "${quote(value)}"; limit 1;`,
+        gameCache,
+        pendingGames,
+      )
+    )[0] ?? null;
   if (!game) {
     const results = await queryIgdb(
       "games",
       `search "${quote(value)}"; fields ${GAME_FIELDS}; limit 1;`,
+      gameCache,
+      pendingGames,
     );
-    game = results[0] || null;
+    game = results[0] ?? null;
   }
   if (!game) return { detail: "Not found." };
   const normalized = normalizeGame(game);
@@ -225,28 +367,34 @@ export const getGame = cache(async (nameOrSlug) => {
     const times = await queryIgdb(
       "game_time_to_beats",
       `fields hastily,normally,completely,count; where game_id = ${normalized.id}; limit 1;`,
+      timeCache,
+      pendingTimes,
     );
-    normalized.game_time_to_beat = times[0] || null;
+    normalized.game_time_to_beat = times[0] ?? null;
   }
   return normalized;
 });
 
-export const getEditions = cache(async (nameOrSlug) => {
+export const getEditions = cache(async (nameOrSlug: string): Promise<EditionsResult> => {
   const game = await findBySlug(nameOrSlug);
   if (!game) return { count: 0, results: [] };
   const results = await queryIgdb(
     "games",
     `fields id,name,slug,first_release_date; where parent_game = ${game.id} | version_parent = ${game.id}; limit 20;`,
+    editionCache,
+    pendingEditions,
   );
   return { count: results.length, results };
 });
 
-export async function getScreenshots(nameOrSlug) {
+export async function getScreenshots(nameOrSlug: string): Promise<ScreenshotResult> {
   const game = await findBySlug(nameOrSlug);
   if (!game) return { count: 0, results: [] };
   const results = await queryIgdb(
     "screenshots",
-    `fields image_id,width,height; where game = ${game.id}; limit 30;`,
+    `fields id,image_id,width,height; where game = ${game.id}; limit 30;`,
+    screenshotCache,
+    pendingScreenshots,
   );
   return {
     count: results.length,

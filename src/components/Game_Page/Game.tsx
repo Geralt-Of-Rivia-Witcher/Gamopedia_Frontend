@@ -2,23 +2,35 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { SearchBar } from "../Search_Bar/SearchBar.jsx";
-import Screenshots from "./Carousel/Screenshots.jsx";
-import VideoGallery from "./VideoGallery.jsx";
-import Footer from "../Footer/Footer.jsx";
-import ThemeToggle from "../ThemeToggle.jsx";
+import { SearchBar } from "../Search_Bar/SearchBar";
+import Screenshots from "./Carousel/Screenshots";
+import VideoGallery from "./VideoGallery";
+import Footer from "../Footer/Footer";
+import ThemeToggle from "../ThemeToggle";
 import { formatDate } from "../../utils/formatDate";
+import type { ReactNode } from "react";
+import type { GameDetails, GameEdition, NamedEntity, StoreListing } from "@/types/game";
 
-function listNames(items) {
+interface StoreGroupListing {
+  id: number | string;
+  url: string;
+  label: string;
+}
+interface StoreGroup {
+  name: string;
+  listings: StoreGroupListing[];
+}
+
+function listNames(items?: NamedEntity[]) {
   if (!items?.length) return "Not listed";
   return items
-    .map((item) => item?.name || item?.platform?.name || item)
+    .map((item) => item.name)
     .filter(Boolean)
     .join(", ");
 }
 
-function groupStoreListings(stores = [], gameName = "") {
-  const groupsByName = new Map();
+function groupStoreListings(stores: StoreListing[] = [], gameName = ""): StoreGroup[] {
+  const groupsByName = new Map<string, StoreGroup & { urls: Set<string> }>();
 
   stores.forEach((listing) => {
     if (!listing?.url) return;
@@ -28,6 +40,7 @@ function groupStoreListings(stores = [], gameName = "") {
       groupsByName.set(groupKey, { name: name.trim(), listings: [], urls: new Set() });
     }
     const group = groupsByName.get(groupKey);
+    if (!group) return;
     if (group.urls.has(listing.url)) return;
     group.urls.add(listing.url);
 
@@ -58,7 +71,7 @@ function groupStoreListings(stores = [], gameName = "") {
   });
 }
 
-function Detail({ label, children }) {
+function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="detail-row">
       <dt>{label}</dt>
@@ -67,11 +80,11 @@ function Detail({ label, children }) {
   );
 }
 
-function Game({ game, editions = [] }) {
+function Game({ game, editions = [] }: { game: GameDetails; editions?: GameEdition[] }) {
   const [expanded, setExpanded] = useState(false);
   if (!game) return null;
   const ratings = (() => {
-    const values = [];
+    const values: Array<{ label: string; value: number; url?: string; suffix?: string }> = [];
     if (game.aggregated_rating != null)
       values.push({ label: "IGDB critic score", value: Math.round(game.aggregated_rating) });
     if (game.rating != null)
@@ -79,12 +92,10 @@ function Game({ game, editions = [] }) {
     return values;
   })();
 
-  const description = (game.description_raw || game.description || "")
-    .replace(/<[^>]*>/g, "")
-    .trim();
+  const description = game.description_raw.replace(/<[^>]*>/g, "").trim();
   const clipped = description.length > 560 && !expanded;
   const storeGroups = groupStoreListings(game.stores, game.name);
-  const details = [
+  const details: Array<[string, ReactNode]> = [
     ["Release date", game.tba ? "To be announced" : formatDate(game.released)],
     ["Developer", listNames(game.developers)],
     ["Publisher", listNames(game.publishers)],
@@ -118,7 +129,9 @@ function Game({ game, editions = [] }) {
         className="game-hero"
         style={
           game.background_image
-            ? { "--hero-image": `url("${game.background_image.replace(/"/g, '\\"')}")` }
+            ? {
+                "--hero-image": `url("${game.background_image.replace(/"/g, '\\"')}")`,
+              }
             : undefined
         }
       >

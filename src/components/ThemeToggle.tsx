@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "gamopedia-theme";
 const THEME_EVENT = "gamopedia-theme-change";
+type Theme = "dark" | "light";
 
 function getSystemTheme() {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -26,7 +27,7 @@ function getServerSnapshot() {
   return "light";
 }
 
-function setTheme(theme, persist = false) {
+function setTheme(theme: Theme, persist = false): void {
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
   document
@@ -42,12 +43,12 @@ function setTheme(theme, persist = false) {
   window.dispatchEvent(new Event(THEME_EVENT));
 }
 
-function subscribe(onChange) {
+function subscribe(onChange: () => void): () => void {
   const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-  const onSystemChange = (event) => {
+  const onSystemChange = (event: MediaQueryListEvent) => {
     if (!getStoredTheme()) setTheme(event.matches ? "dark" : "light");
   };
-  const onStorageChange = (event) => {
+  const onStorageChange = (event: StorageEvent) => {
     if (event.key !== STORAGE_KEY && event.key !== null) return;
     setTheme(getStoredTheme() || getSystemTheme());
   };
@@ -62,7 +63,7 @@ function subscribe(onChange) {
   };
 }
 
-export default function ThemeToggle({ compact = false }) {
+export default function ThemeToggle({ compact = false }: { compact?: boolean }) {
   const theme = useSyncExternalStore(subscribe, getThemeSnapshot, getServerSnapshot);
 
   return (

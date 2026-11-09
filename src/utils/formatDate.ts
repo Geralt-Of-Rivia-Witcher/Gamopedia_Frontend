@@ -1,5 +1,5 @@
 // Format dates consistently on the server and in the browser.
-export function formatDate(dateInput) {
+export function formatDate(dateInput: string | null | undefined) {
   if (!dateInput) return "Not Available";
   const date = new Date(dateInput);
   if (isNaN(date.getTime())) return "Not Available";

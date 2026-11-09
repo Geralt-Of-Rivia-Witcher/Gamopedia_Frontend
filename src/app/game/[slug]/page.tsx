@@ -2,13 +2,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import GamePage from "@/components/Game_Page/Game";
 import { getEditions, getGame } from "@/lib/igdb";
+import type { Metadata } from "next";
+import type { GameEdition } from "@/types/game";
 
-export async function generateMetadata({ params }) {
+interface GamePageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: GamePageProps): Promise<Metadata> {
   const { slug } = await params;
   try {
     const game = await getGame(slug);
-    if (game?.slug && game?.name) {
-      const description = (game.description_raw || game.description || "")
+    if ("slug" in game && game.slug && game.name) {
+      const description = game.description_raw
         .replace(/<[^>]*>/g, " ")
         .replace(/\s+/g, " ")
         .trim()
@@ -24,9 +30,9 @@ export async function generateMetadata({ params }) {
   return { title: "Game details — Gamopedia" };
 }
 
-export default async function Page({ params }) {
+export default async function Page({ params }: GamePageProps) {
   const { slug } = await params;
-  let game;
+  let game: Awaited<ReturnType<typeof getGame>>;
   try {
     game = await getGame(slug);
   } catch {
@@ -45,11 +51,11 @@ export default async function Page({ params }) {
     );
   }
 
-  if (!game?.slug || game?.detail === "Not found.") {
+  if (!("slug" in game) || !game.slug) {
     notFound();
   }
 
-  let editions = [];
+  let editions: GameEdition[] = [];
   try {
     const response = await getEditions(game.slug);
     editions = response?.results || [];

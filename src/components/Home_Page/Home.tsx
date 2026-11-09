@@ -1,10 +1,10 @@
 import React from "react";
 import Link from "next/link";
-import { SearchBar } from "../Search_Bar/SearchBar.jsx";
-import Footer from "../Footer/Footer.jsx";
-import ThemeToggle from "../ThemeToggle.jsx";
+import { SearchBar } from "../Search_Bar/SearchBar";
+import Footer from "../Footer/Footer";
+import ThemeToggle from "../ThemeToggle";
 
-function Home() {
+function Home(): React.JSX.Element {
   return (
     <main className="home-page">
       <header className="site-header">

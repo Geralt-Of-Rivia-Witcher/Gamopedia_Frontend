@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 
-function Footer() {
+function Footer(): React.JSX.Element {
   return (
     <footer className="site-footer">
       <Link className="footer-wordmark" href="/">
